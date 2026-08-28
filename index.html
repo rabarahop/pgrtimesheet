@@ -5,16 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timesheet Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 h-screen flex flex-col font-sans">
 
+    <!-- FLOATING NOTIFICATION TOAST CONTAINER -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full px-4 pointer-events-none"></div>
+
     <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="flex flex-1 items-center justify-center">
+    <div id="login-screen" class="flex flex-1 items-center justify-center p-4">
         <div class="bg-white p-8 rounded-lg shadow-md w-96">
             <h2 class="text-2xl font-bold mb-6 text-center text-blue-800">Timesheet Login</h2>
             
-            <div id="error-message" class="hidden bg-red-100 text-red-700 p-3 rounded mb-4 text-sm"></div>
-            <div id="success-message" class="hidden bg-green-100 text-green-700 p-3 rounded mb-4 text-sm"></div>
+            <div id="error-message" class="hidden bg-red-100 text-red-700 p-3 rounded mb-4 text-sm font-semibold"></div>
+            <div id="success-message" class="hidden bg-green-100 text-green-700 p-3 rounded mb-4 text-sm font-semibold"></div>
 
             <form id="login-form">
                 <div class="mb-4">
@@ -25,12 +29,12 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
                     <input type="password" id="password" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500" required>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition-colors">
                     Sign In
                 </button>
             </form>
             <div class="mt-4 text-center">
-                <button id="forgot-password" class="text-sm text-blue-500 hover:underline">Forgot your password?</button>
+                <button type="button" id="forgot-password" class="text-sm text-blue-500 hover:underline">Forgot your password?</button>
             </div>
         </div>
     </div>
@@ -38,14 +42,16 @@
     <!-- MAIN APP SCREEN (Hidden by default) -->
     <div id="app-screen" class="hidden flex-col h-screen overflow-y-auto">
         <!-- Navigation Bar -->
-        <nav class="bg-blue-800 text-white p-4 flex justify-between items-center shadow-md shrink-0">
-            <div class="font-bold text-xl">Timesheet Portal</div>
+        <nav class="bg-blue-800 text-white p-4 flex justify-between items-center shadow-md shrink-0 sticky top-0 z-40">
+            <div class="font-bold text-xl flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left"></i> Timesheet Portal
+            </div>
             <div class="flex items-center gap-4">
                 <div class="text-sm hidden sm:block">
                     Hello, <span id="user-display-email" class="font-bold"></span> 
                     <span id="user-display-role" class="bg-blue-600 px-2 py-1 rounded text-xs ml-2 uppercase"></span>
                 </div>
-                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm font-bold">Log Out</button>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm font-bold transition-colors">Log Out</button>
             </div>
         </nav>
 
@@ -54,66 +60,46 @@
             
             <!-- EMPLOYEE VIEW (Timesheet Form) -->
             <div id="employee-view" class="hidden bg-white p-6 rounded shadow-md border-t-4 border-blue-500 mb-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-800">Submit Daily Timesheet</h3>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">Submit Daily Timesheet</h3>
+                        <p class="text-xs text-gray-500">Add work hours across multiple jobs and enter your daily reimbursements.</p>
+                    </div>
                     <div>
                         <label class="block text-gray-700 text-xs font-bold mb-1 uppercase">Date</label>
                         <input type="date" id="ts-date" class="p-2 border rounded focus:outline-none focus:border-blue-500 text-sm font-bold" required>
                     </div>
                 </div>
-                
-                <div id="ts-success-msg" class="hidden bg-green-100 text-green-700 p-3 rounded mb-4 text-sm font-bold">
-                    Timesheet submitted successfully!
-                </div>
 
                 <form id="timesheet-form" class="space-y-6">
                     
-                    <!-- SECTION 1: WORK HOURS -->
+                    <!-- SECTION 1: WORK HOURS & MULTI-LINE JOBS -->
                     <div class="bg-gray-50 p-4 rounded border">
-                        <h4 class="font-bold text-blue-800 mb-4 border-b pb-2">Work Hours & Jobs</h4>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-1">Regular Hours</label>
-                                <input type="number" step="0.5" id="ts-reg-hours" placeholder="0" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-1">Job # (Regular)</label>
-                                <input type="text" id="ts-reg-job" placeholder="Enter Job #" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                            </div>
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h4 class="font-bold text-blue-800">Work Hours & Jobs (Multi-line)</h4>
+                            <button type="button" id="add-row-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> Add Job Row
+                            </button>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-1">Overtime Hours</label>
-                                <input type="number" step="0.5" id="ts-ot-hours" placeholder="0" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-1">Job # (Overtime)</label>
-                                <input type="text" id="ts-ot-job" placeholder="Enter Job #" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-1">Double Time Hours</label>
-                                <input type="number" step="0.5" id="ts-dt-hours" placeholder="0" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-1">Job # (Double Time)</label>
-                                <input type="text" id="ts-dt-job" placeholder="Enter Job #" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-1">High Rate (in hrs)</label>
-                                <input type="number" step="0.5" id="ts-high-rate" placeholder="0" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-1">Out of Territory</label>
-                                <input type="text" id="ts-out-territory" placeholder="Notes/Amount" class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                            </div>
+                        <!-- Table Container for Rows -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse" id="job-rows-table">
+                                <thead>
+                                    <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
+                                        <th class="p-2 w-36">Job #</th>
+                                        <th class="p-2 w-24">Regular</th>
+                                        <th class="p-2 w-24">Overtime</th>
+                                        <th class="p-2 w-24">Double Time</th>
+                                        <th class="p-2 w-24">High Rate</th>
+                                        <th class="p-2">Out of Territory Notes</th>
+                                        <th class="p-2 w-12 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="job-rows-container" class="divide-y divide-gray-200">
+                                    <!-- Dynamic rows injected via JS -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -159,8 +145,8 @@
 
                     <!-- Submit Button -->
                     <div class="pt-2 text-right">
-                        <button type="submit" class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded hover:bg-green-700 shadow-md transition-colors text-lg">
-                            Submit Timesheet
+                        <button type="submit" class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded hover:bg-green-700 shadow-md transition-colors text-lg flex items-center justify-center gap-2 mx-auto md:mx-0 md:ml-auto">
+                            <i class="fa-solid fa-paper-plane"></i> Submit Timesheet
                         </button>
                     </div>
                 </form>
@@ -174,13 +160,12 @@
         </div>
     </div>
 
-    <!-- FIREBASE SCRIPTS -->
+    <!-- FIREBASE & APP SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 
-        // Corrected Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyDnh-uSVwIiG0kU7IeELr0blqY3tHY33PE",
             authDomain: "prgtimesheet.firebaseapp.com",
@@ -201,13 +186,79 @@
         const errorMsg = document.getElementById('error-message');
         const employeeView = document.getElementById('employee-view');
         const adminView = document.getElementById('admin-view');
-
-        // Form Elements
         const tsForm = document.getElementById('timesheet-form');
-        const tsSuccessMsg = document.getElementById('ts-success-msg');
-        
+        const jobRowsContainer = document.getElementById('job-rows-container');
+
         // Set default date to today
         document.getElementById('ts-date').valueAsDate = new Date();
+
+        // Toast Notification System (Sticky / Floating)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-green-600 text-white' : (type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white');
+            const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info');
+            
+            toast.className = `pointer-events-auto flex items-center justify-between p-4 rounded-lg shadow-xl ${bgClass} transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid ${icon} text-lg"></i>
+                    <span class="font-semibold text-sm">${message}</span>
+                </div>
+                <button type="button" class="ml-4 text-white hover:text-gray-200 focus:outline-none" onclick="this.parentElement.remove()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Auto remove after 4.5 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        }
+
+        // Multi-line Job Row Management
+        function addJobRow(data = {}) {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-gray-100 transition-colors";
+            tr.innerHTML = `
+                <td class="p-2"><input type="text" placeholder="Job #" class="row-job w-full p-1.5 border rounded text-sm bg-white" value="${data.job || ''}" required></td>
+                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-reg w-full p-1.5 border rounded text-sm bg-white" value="${data.regular || ''}"></td>
+                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-ot w-full p-1.5 border rounded text-sm bg-white" value="${data.overtime || ''}"></td>
+                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-dt w-full p-1.5 border rounded text-sm bg-white" value="${data.doubleTime || ''}"></td>
+                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-high w-full p-1.5 border rounded text-sm bg-white" value="${data.highRate || ''}"></td>
+                <td class="p-2"><input type="text" placeholder="Territory notes" class="row-territory w-full p-1.5 border rounded text-sm bg-white" value="${data.territory || ''}"></td>
+                <td class="p-2 text-center">
+                    <button type="button" class="delete-row-btn text-red-500 hover:text-red-700 p-1 rounded transition-colors" title="Remove row">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+
+            // Delete functionality
+            tr.querySelector('.delete-row-btn').addEventListener('click', () => {
+                if (jobRowsContainer.children.length > 1) {
+                    tr.remove();
+                } else {
+                    showToast("You must keep at least one job row.", "error");
+                }
+            });
+
+            jobRowsContainer.appendChild(tr);
+        }
+
+        // Initialize with 1 default row
+        addJobRow();
+
+        document.getElementById('add-row-btn').addEventListener('click', () => addJobRow());
 
         // Session Control
         onAuthStateChanged(auth, async (user) => {
@@ -218,23 +269,20 @@
                 
                 document.getElementById('user-display-email').innerText = user.email;
 
-                // Check Role in Firestore
                 const docRef = doc(db, "usuarios", user.email);
                 const docSnap = await getDoc(docRef);
                 
                 let userRole = "employee"; 
                 if (docSnap.exists()) {
-                    userRole = docSnap.data().rol.toLowerCase(); // Ensure lowercase for check
+                    userRole = docSnap.data().rol.toLowerCase();
                 }
                 
-                // Display role (translate spanish DB roles to English for UI if needed)
                 let displayRole = userRole;
                 if(userRole === 'propietario') displayRole = 'owner';
                 if(userRole === 'contralor') displayRole = 'controller';
                 
                 document.getElementById('user-display-role').innerText = displayRole;
 
-                // Show panels based on role
                 if (userRole === 'propietario' || userRole === 'contralor' || userRole === 'owner' || userRole === 'admin') {
                     adminView.classList.remove('hidden');
                     employeeView.classList.remove('hidden'); 
@@ -273,66 +321,98 @@
         document.getElementById('forgot-password').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             if(!email) {
-                alert("Please enter your email address above first.");
+                showToast("Please enter your email address above first.", "error");
                 return;
             }
             sendPasswordResetEmail(auth, email)
-                .then(() => alert("Reset link sent! Please check your email."))
-                .catch((error) => alert("Error: " + error.message));
+                .then(() => showToast("Reset link sent! Please check your email.", "success"))
+                .catch((error) => showToast("Error: " + error.message, "error"));
         });
 
-        // Submit Timesheet to Firestore
+        // Submit Timesheet with Validation & Multi-line Support
         tsForm.addEventListener('submit', async (e) => {
             e.preventDefault(); 
             
-            // Collect all data from the form
-            const formData = {
-                employee_email: auth.currentUser.email,
-                date: document.getElementById('ts-date').value,
-                
-                // Work Hours
-                regular_hours: Number(document.getElementById('ts-reg-hours').value) || 0,
-                regular_job: document.getElementById('ts-reg-job').value,
-                
-                overtime_hours: Number(document.getElementById('ts-ot-hours').value) || 0,
-                overtime_job: document.getElementById('ts-ot-job').value,
-                
-                double_time_hours: Number(document.getElementById('ts-dt-hours').value) || 0,
-                double_time_job: document.getElementById('ts-dt-job').value,
-                
-                high_rate_hours: Number(document.getElementById('ts-high-rate').value) || 0,
-                out_of_territory: document.getElementById('ts-out-territory').value,
-                
-                // Reimbursements
+            // 1. Collect Job Rows Data
+            const jobRows = [];
+            let totalWorkHours = 0;
+            
+            const rows = jobRowsContainer.querySelectorAll('tr');
+            rows.forEach((tr) => {
+                const jobNum = tr.querySelector('.row-job').value.trim();
+                const reg = Number(tr.querySelector('.row-reg').value) || 0;
+                const ot = Number(tr.querySelector('.row-ot').value) || 0;
+                const dt = Number(tr.querySelector('.row-dt').value) || 0;
+                const high = Number(tr.querySelector('.row-high').value) || 0;
+                const territory = tr.querySelector('.row-territory').value.trim();
+
+                const rowTotalHours = reg + ot + dt + high;
+                totalWorkHours += rowTotalHours;
+
+                if (jobNum || rowTotalHours > 0) {
+                    jobRows.push({
+                        job_number: jobNum || "GENERAL",
+                        regular_hours: reg,
+                        overtime_hours: ot,
+                        double_time_hours: dt,
+                        high_rate_hours: high,
+                        out_of_territory: territory
+                    });
+                }
+            });
+
+            // 2. Collect Reimbursements Data
+            const reimbursementData = {
                 mileage: Number(document.getElementById('ts-mileage').value) || 0,
                 parking: Number(document.getElementById('ts-parking').value) || 0,
                 tolls: Number(document.getElementById('ts-tolls').value) || 0,
                 hauling: Number(document.getElementById('ts-hauling').value) || 0,
                 phone: Number(document.getElementById('ts-phone').value) || 0,
-                
                 other_receipts: Number(document.getElementById('ts-other-receipts').value) || 0,
-                other_receipts_job: document.getElementById('ts-other-job').value,
-                
+                other_receipts_job: document.getElementById('ts-other-job').value.trim()
+            };
+
+            const totalReimbursements = Object.values(reimbursementData).reduce((a, b) => (typeof b === 'number' ? a + b : a), 0);
+
+            // 3. VALIDATION: Prevent Zero Submissions
+            if (jobRows.length === 0 && totalReimbursements === 0) {
+                showToast("Error: All fields are zero. Please enter work hours or reimbursements before submitting.", "error");
+                return;
+            }
+
+            // Validate that if hours or job numbers are entered, job numbers are provided
+            for (let i = 0; i < jobRows.length; i++) {
+                const r = jobRows[i];
+                const hasHours = (r.regular_hours + r.overtime_hours + r.double_time_hours + r.high_rate_hours) > 0;
+                if (hasHours && (!r.job_number || r.job_number === "GENERAL")) {
+                    showToast(`Row #${i + 1} has hours entered but is missing a valid Job #.`, "error");
+                    return;
+                }
+            }
+
+            const formData = {
+                employee_email: auth.currentUser.email,
+                date: document.getElementById('ts-date').value,
+                job_entries: jobRows,
+                reimbursements: reimbursementData,
                 created_at: serverTimestamp() 
             };
 
             try {
-                // Save to 'timesheets' collection
+                // Save to Firebase Firestore 'timesheets' collection
                 await addDoc(collection(db, "timesheets"), formData);
 
-                // Show success message and reset form
-                tsSuccessMsg.classList.remove('hidden');
-                tsForm.reset();
-                document.getElementById('ts-date').valueAsDate = new Date(); // Reset date to today
+                showToast("Timesheet submitted successfully!", "success");
                 
-                // Hide success message after 3 seconds
-                setTimeout(() => {
-                    tsSuccessMsg.classList.add('hidden');
-                }, 3000);
+                // Reset Form
+                tsForm.reset();
+                document.getElementById('ts-date').valueAsDate = new Date();
+                jobRowsContainer.innerHTML = "";
+                addJobRow(); // Reset to one blank row
 
             } catch (error) {
                 console.error("Error saving timesheet: ", error);
-                alert("There was an error saving your timesheet. Please check your internet connection.");
+                showToast("There was an error saving your timesheet. Please check your internet connection.", "error");
             }
         });
 
