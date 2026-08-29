@@ -8,6 +8,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- LIBRERÍA PARA EXPORTAR A EXCEL (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* Ocultar la barra de desplazamiento (scrollbar) en los tabs para que se vea más limpio en móviles, pero siga siendo deslizable */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col font-sans">
 
@@ -60,14 +70,16 @@
         <!-- APP TABS (Only visible for roles: owner, controller, accounting) -->
         <div id="app-tabs" class="hidden bg-white shadow-sm shrink-0 border-b">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex space-x-8">
-                    <button id="tab-my-timesheet" class="app-tab border-blue-600 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2">
+                <!-- Se agregó overflow-x-auto y no-scrollbar para móviles -->
+                <div class="flex space-x-4 sm:space-x-8 overflow-x-auto no-scrollbar">
+                    <!-- Se agregó whitespace-nowrap para que el texto no se rompa -->
+                    <button id="tab-my-timesheet" class="app-tab border-blue-600 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 whitespace-nowrap">
                         <i class="fa-solid fa-user"></i> My Timesheet
                     </button>
-                    <button id="tab-all-timesheets" class="app-tab border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 hidden">
+                    <button id="tab-all-timesheets" class="app-tab border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 hidden whitespace-nowrap">
                         <i class="fa-solid fa-users"></i> Company Timesheets
                     </button>
-                    <button id="tab-user-management" class="app-tab border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 hidden">
+                    <button id="tab-user-management" class="app-tab border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 hidden whitespace-nowrap">
                         <i class="fa-solid fa-user-gear"></i> User Management
                     </button>
                 </div>
@@ -112,14 +124,15 @@
                                     <div class="overflow-x-auto">
                                         <table class="w-full text-left border-collapse" id="job-rows-table">
                                             <thead>
+                                                <!-- Se reemplazaron las clases w-XX por min-w-[XXpx] para forzar anchos cómodos en móviles -->
                                                 <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
-                                                    <th class="p-2 w-36">Job #</th>
-                                                    <th class="p-2 w-24">Regular</th>
-                                                    <th class="p-2 w-24">Overtime</th>
-                                                    <th class="p-2 w-24">Double Time</th>
-                                                    <th class="p-2 w-24">High Rate</th>
-                                                    <th class="p-2">Out of Territory Notes</th>
-                                                    <th class="p-2 w-12 text-center">Action</th>
+                                                    <th class="p-2 min-w-[180px]">Job #</th>
+                                                    <th class="p-2 min-w-[100px]">Regular</th>
+                                                    <th class="p-2 min-w-[100px]">Overtime</th>
+                                                    <th class="p-2 min-w-[100px]">Double Time</th>
+                                                    <th class="p-2 min-w-[100px]">High Rate</th>
+                                                    <th class="p-2 min-w-[160px]">Out of Territory Notes</th>
+                                                    <th class="p-2 min-w-[60px] text-center">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="job-rows-container" class="divide-y divide-gray-200">
@@ -145,11 +158,12 @@
                                         <table class="w-full text-left border-collapse" id="reimb-rows-table">
                                             <thead>
                                                 <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
-                                                    <th class="p-2 w-36">Job #</th>
-                                                    <th class="p-2 w-40">Expense Type</th>
-                                                    <th class="p-2 w-24">Amount / Qty</th>
-                                                    <th class="p-2">Notes</th>
-                                                    <th class="p-2 w-12 text-center">Action</th>
+                                                    <!-- Se reemplazaron anchos por anchos mínimos -->
+                                                    <th class="p-2 min-w-[180px]">Job #</th>
+                                                    <th class="p-2 min-w-[150px]">Expense Type</th>
+                                                    <th class="p-2 min-w-[120px]">Amount / Qty</th>
+                                                    <th class="p-2 min-w-[160px]">Notes</th>
+                                                    <th class="p-2 min-w-[60px] text-center">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="reimb-rows-container" class="divide-y divide-gray-200">
@@ -238,11 +252,11 @@
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
-                                    <th class="p-3 border-b">Date</th>
-                                    <th class="p-3 border-b">Employee</th>
-                                    <th class="p-3 border-b">Status</th>
-                                    <th class="p-3 border-b text-center">Total Hours</th>
-                                    <th class="p-3 border-b text-center">Reimbursements ($)</th>
+                                    <th class="p-3 border-b min-w-[120px]">Date</th>
+                                    <th class="p-3 border-b min-w-[200px]">Employee</th>
+                                    <th class="p-3 border-b min-w-[120px]">Status</th>
+                                    <th class="p-3 border-b text-center min-w-[120px]">Total Hours</th>
+                                    <th class="p-3 border-b text-center min-w-[160px]">Reimbursements ($)</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-timesheets-table-body" class="divide-y divide-gray-200 bg-white text-sm">
@@ -276,7 +290,6 @@
                                 </div>
                                 <div>
                                     <label class="block text-gray-700 text-xs font-bold mb-1 uppercase">Role</label>
-                                    <!-- Las opciones se generarán por JavaScript dependiendo de quién inicie sesión -->
                                     <select id="new-user-role" class="w-full p-2 border rounded focus:outline-none focus:border-orange-500 text-sm" required>
                                     </select>
                                 </div>
@@ -304,10 +317,10 @@
                                 <table class="w-full text-left border-collapse">
                                     <thead>
                                         <tr class="bg-gray-100 text-gray-700 text-xs uppercase">
-                                            <th class="p-3 border-b">Email</th>
-                                            <th class="p-3 border-b">Role</th>
-                                            <th class="p-3 border-b text-center">Status</th>
-                                            <th class="p-3 border-b text-center">Actions</th>
+                                            <th class="p-3 border-b min-w-[200px]">Email</th>
+                                            <th class="p-3 border-b min-w-[150px]">Role</th>
+                                            <th class="p-3 border-b text-center min-w-[120px]">Status</th>
+                                            <th class="p-3 border-b text-center min-w-[150px]">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="users-table-body" class="divide-y divide-gray-200 bg-white text-sm">
