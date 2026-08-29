@@ -71,8 +71,8 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 text-xs font-bold mb-1 uppercase">Select Date</label>
-                        <!-- Added min/max logic via JS later -->
-                        <input type="date" id="ts-date" class="p-2 border rounded focus:outline-none focus:border-blue-500 text-sm font-bold bg-blue-50 text-blue-900 cursor-pointer hover:bg-blue-100 transition" required>
+                        <!-- Added min logic via HTML: Only 2026-08-20 onwards is selectable -->
+                        <input type="date" id="ts-date" min="2026-08-20" class="p-2 border rounded focus:outline-none focus:border-blue-500 text-sm font-bold bg-blue-50 text-blue-900 cursor-pointer hover:bg-blue-100 transition" required>
                     </div>
                 </div>
 
@@ -175,6 +175,9 @@
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
         // IMPORTANTE: Agregamos setDoc para poder actualizar borradores sin crear duplicados
         import { getFirestore, doc, getDoc, setDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
+
+        // FECHA DE INICIO OFICIAL DEL SISTEMA
+        const SYSTEM_START_DATE = "2026-08-20";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDnh-uSVwIiG0kU7IeELr0blqY3tHY33PE",
@@ -478,16 +481,20 @@
                 // 1. If SUBMITTING, check previous workday compliance
                 if (actionStatus === 'submitted') {
                     const prevDate = getPreviousWorkday(selectedDate);
-                    const prevDocId = `${auth.currentUser.email}_${prevDate}`;
-                    const prevDocSnap = await getDoc(doc(db, "timesheets", prevDocId));
                     
-                    if (!prevDocSnap.exists() || prevDocSnap.data().status !== 'submitted') {
-                        showToast(`ACTION REQUIRED: You cannot submit today's timesheet until you submit your timesheet for the previous workday (${prevDate}).`, "error");
-                        // Unlock UI
-                        submitBtn.disabled = false;
-                        saveDraftBtn.disabled = false;
-                        loadingSpinner.classList.add('hidden');
-                        return; // Stop execution
+                    // APLICAMOS LA REGLA DE LA FECHA DE INICIO DEL SISTEMA
+                    if (prevDate >= SYSTEM_START_DATE) {
+                        const prevDocId = `${auth.currentUser.email}_${prevDate}`;
+                        const prevDocSnap = await getDoc(doc(db, "timesheets", prevDocId));
+                        
+                        if (!prevDocSnap.exists() || prevDocSnap.data().status !== 'submitted') {
+                            showToast(`ACTION REQUIRED: You cannot submit today's timesheet until you submit your timesheet for the previous workday (${prevDate}).`, "error");
+                            // Unlock UI
+                            submitBtn.disabled = false;
+                            saveDraftBtn.disabled = false;
+                            loadingSpinner.classList.add('hidden');
+                            return; // Stop execution
+                        }
                     }
                 }
 
