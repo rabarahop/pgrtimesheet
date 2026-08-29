@@ -418,6 +418,27 @@
             }, 6000); 
         }
 
+        // --- INACTIVITY AUTO LOGOUT LOGIC ---
+        const INACTIVITY_TIME_MS = 3 * 60 * 1000; // 3 minutos
+        let inactivityTimer;
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            // Solo establecer el temporizador si el usuario ha iniciado sesión
+            if (auth.currentUser) {
+                inactivityTimer = setTimeout(() => {
+                    signOut(auth).then(() => {
+                        showToast("Por su seguridad, la sesión se ha cerrado por inactividad de 3 minutos.", "error");
+                    });
+                }, INACTIVITY_TIME_MS);
+            }
+        }
+
+        // Escuchar eventos de actividad del usuario en toda la página
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+            document.addEventListener(evt, resetInactivityTimer);
+        });
+
         // --- TAB NAVIGATION LOGIC ---
         function switchTab(activeTabId, activeViewId) {
             // Reset all tabs
@@ -501,12 +522,18 @@
                 dateInput.valueAsDate = new Date();
                 loadTimesheetDataForDate(dateInput.value);
                 loadRecentActivity(user.email);
+                
+                // Iniciar el temporizador de inactividad
+                resetInactivityTimer();
 
             } else {
                 loginScreen.classList.remove('hidden');
                 appScreen.classList.add('hidden');
                 appScreen.classList.remove('flex');
                 currentUserRole = "empleado";
+                
+                // Limpiar el temporizador si cierra sesión
+                clearTimeout(inactivityTimer);
             }
         });
 
@@ -807,9 +834,6 @@
             const filterEnd = document.getElementById('filter-end').value;
 
             try {
-                // To keep it simple without needing complex Firebase indexes initially:
-                // We fetch all "submitted" timesheets or all timesheets and filter locally.
-                // For a massive app, you'd use compound queries, but for this prototype local filtering is safer.
                 const tsRef = collection(db, "timesheets");
                 const q = query(tsRef); 
                 const querySnapshot = await getDocs(q);
@@ -820,18 +844,16 @@
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
-                    // Filter Logic Local
                     let passesFilter = true;
                     
-                    if (data.status !== 'submitted') passesFilter = false; // Only show finalized
+                    if (data.status !== 'submitted') passesFilter = false; 
                     if (filterStart && data.date < filterStart) passesFilter = false;
                     if (filterEnd && data.date > filterEnd) passesFilter = false;
                     if (filterName && !data.employee_email.toLowerCase().includes(filterName)) passesFilter = false;
 
                     if (passesFilter) {
-                        currentAdminData.push(data); // Save for Excel Export
+                        currentAdminData.push(data); 
                         
-                        // Format for table
                         const bgStatus = 'bg-green-100 text-green-800';
                         
                         html += `
@@ -849,7 +871,6 @@
                 if(currentAdminData.length === 0) {
                     adminTsTableBody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-gray-500">No submitted timesheets found matching your filters.</td></tr>';
                 } else {
-                    // Sort descending by date
                     currentAdminData.sort((a,b) => (a.date > b.date) ? -1 : 1);
                     adminTsTableBody.innerHTML = html;
                 }
@@ -867,7 +888,6 @@
                 return;
             }
 
-            // Flatten data for Excel
             const excelRows = [];
 
             currentAdminData.forEach(ts => {
@@ -877,7 +897,6 @@
                     "Status": ts.status
                 };
 
-                // Add Job Entries
                 if (ts.job_entries && ts.job_entries.length > 0) {
                     ts.job_entries.forEach(job => {
                         excelRows.push({
@@ -894,7 +913,6 @@
                     });
                 }
 
-                // Add Reimbursements
                 if (ts.reimbursements && ts.reimbursements.length > 0) {
                     ts.reimbursements.forEach(r => {
                         excelRows.push({
@@ -912,12 +930,10 @@
                 }
             });
 
-            // Create Workbook
             const worksheet = XLSX.utils.json_to_sheet(excelRows);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Timesheets");
             
-            // Trigger Download
             XLSX.writeFile(workbook, `Timesheet_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
         });
 
@@ -945,7 +961,6 @@
                         ? `<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-bold uppercase">Active</span>`
                         : `<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-bold uppercase">Inactive</span>`;
 
-                    // Only owner can see the toggle button
                     let actionBtn = '';
                     if (['propietario', 'owner'].includes(currentUserRole) && emailId !== auth.currentUser.email) {
                         if(status === 'active') {
@@ -975,7 +990,6 @@
             }
         }
 
-        // Expose to window for onclick in HTML string
         window.toggleUserStatus = async function(emailId, newStatus) {
             if(!confirm(`Are you sure you want to change the status to ${newStatus.toUpperCase()}?`)) return;
             
@@ -997,7 +1011,6 @@
             const newRole = document.getElementById('new-user-role').value;
             
             try {
-                // Add to Firestore so they have roles/permissions
                 await setDoc(doc(db, "usuarios", newEmail), {
                     email: newEmail,
                     rol: newRole,
