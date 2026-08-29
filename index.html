@@ -59,15 +59,20 @@
         <div class="p-4 md:p-8 flex-1 max-w-6xl mx-auto w-full">
             
             <!-- EMPLOYEE VIEW (Timesheet Form) -->
-            <div id="employee-view" class="hidden bg-white p-6 rounded shadow-md border-t-4 border-blue-500 mb-6">
+            <div id="employee-view" class="hidden bg-white p-6 rounded shadow-md border-t-4 border-blue-500 mb-6 relative">
+                
+                <!-- Status Banner for Draft/Submitted States -->
+                <div id="status-banner" class="hidden mb-4 p-3 rounded text-sm font-bold flex items-center gap-2"></div>
+
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b pb-4">
                     <div>
-                        <h3 class="text-xl font-bold text-gray-800">Submit Daily Timesheet</h3>
-                        <p class="text-xs text-gray-500">Add work hours across multiple jobs and enter your daily reimbursements.</p>
+                        <h3 class="text-xl font-bold text-gray-800">Daily Timesheet</h3>
+                        <p class="text-xs text-gray-500">Save your progress throughout the day and submit when finished.</p>
                     </div>
                     <div>
-                        <label class="block text-gray-700 text-xs font-bold mb-1 uppercase">Date</label>
-                        <input type="date" id="ts-date" class="p-2 border rounded focus:outline-none focus:border-blue-500 text-sm font-bold" required>
+                        <label class="block text-gray-700 text-xs font-bold mb-1 uppercase">Select Date</label>
+                        <!-- Added min/max logic via JS later -->
+                        <input type="date" id="ts-date" class="p-2 border rounded focus:outline-none focus:border-blue-500 text-sm font-bold bg-blue-50 text-blue-900 cursor-pointer hover:bg-blue-100 transition" required>
                     </div>
                 </div>
 
@@ -137,15 +142,21 @@
                         </div>
                     </div>
 
-                    <!-- Submit Button -->
-                    <div class="pt-2 flex justify-between items-center">
-                        <!-- Loading spinner (hidden by default) -->
-                        <div id="loading-spinner" class="hidden flex items-center gap-2 text-blue-600 font-bold">
-                            <i class="fa-solid fa-spinner fa-spin text-2xl"></i> Uploading receipts & saving...
+                    <!-- Submit Buttons -->
+                    <div class="pt-4 flex flex-col md:flex-row justify-between items-center gap-4 border-t">
+                        <!-- Loading spinner -->
+                        <div id="loading-spinner" class="hidden flex items-center gap-2 text-blue-600 font-bold w-full md:w-auto justify-center">
+                            <i class="fa-solid fa-spinner fa-spin text-2xl"></i> Processing...
                         </div>
-                        <button type="submit" id="submit-ts-btn" class="w-full md:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded hover:bg-blue-700 shadow-md transition-colors text-lg flex items-center justify-center gap-2 ml-auto">
-                            <i class="fa-solid fa-paper-plane"></i> Submit Timesheet
-                        </button>
+                        
+                        <div class="flex w-full md:w-auto gap-4 ml-auto">
+                            <button type="button" id="save-draft-btn" class="w-full md:w-auto bg-gray-500 text-white font-bold py-3 px-6 rounded hover:bg-gray-600 shadow-md transition-colors text-sm flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                            </button>
+                            <button type="submit" id="submit-ts-btn" class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded hover:bg-green-700 shadow-md transition-colors text-lg flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> Final Submit
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -162,7 +173,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
+        // IMPORTANTE: Agregamos setDoc para poder actualizar borradores sin crear duplicados
+        import { getFirestore, doc, getDoc, setDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDnh-uSVwIiG0kU7IeELr0blqY3tHY33PE",
@@ -190,9 +202,9 @@
         const noReimbMsg = document.getElementById('no-reimb-msg');
         const loadingSpinner = document.getElementById('loading-spinner');
         const submitBtn = document.getElementById('submit-ts-btn');
-
-        // Set default date to today
-        document.getElementById('ts-date').valueAsDate = new Date();
+        const saveDraftBtn = document.getElementById('save-draft-btn');
+        const dateInput = document.getElementById('ts-date');
+        const statusBanner = document.getElementById('status-banner');
 
         // Toast Notification System (Sticky / Floating)
         function showToast(message, type = 'success') {
@@ -214,26 +226,24 @@
             `;
             
             container.appendChild(toast);
-            
             setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
-
             setTimeout(() => {
                 toast.classList.add('translate-y-2', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
-            }, 4500);
+            }, 6000); // Extended time slightly for reading longer warnings
         }
 
         // --- MULTI-LINE JOB ROWS ---
-        function addJobRow() {
+        function addJobRow(data = {}) {
             const tr = document.createElement('tr');
             tr.className = "hover:bg-gray-100 transition-colors job-row";
             tr.innerHTML = `
-                <td class="p-2"><input type="text" placeholder="Job #" class="row-job w-full p-1.5 border rounded text-sm bg-white" required></td>
-                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-reg w-full p-1.5 border rounded text-sm bg-white"></td>
-                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-ot w-full p-1.5 border rounded text-sm bg-white"></td>
-                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-dt w-full p-1.5 border rounded text-sm bg-white"></td>
-                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-high w-full p-1.5 border rounded text-sm bg-white"></td>
-                <td class="p-2"><input type="text" placeholder="Territory notes" class="row-territory w-full p-1.5 border rounded text-sm bg-white"></td>
+                <td class="p-2"><input type="text" placeholder="Job #" class="row-job w-full p-1.5 border rounded text-sm bg-white" value="${data.job_number || ''}" required></td>
+                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-reg w-full p-1.5 border rounded text-sm bg-white" value="${data.regular_hours !== undefined ? data.regular_hours : ''}"></td>
+                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-ot w-full p-1.5 border rounded text-sm bg-white" value="${data.overtime_hours !== undefined ? data.overtime_hours : ''}"></td>
+                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-dt w-full p-1.5 border rounded text-sm bg-white" value="${data.double_time_hours !== undefined ? data.double_time_hours : ''}"></td>
+                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-high w-full p-1.5 border rounded text-sm bg-white" value="${data.high_rate_hours !== undefined ? data.high_rate_hours : ''}"></td>
+                <td class="p-2"><input type="text" placeholder="Territory notes" class="row-territory w-full p-1.5 border rounded text-sm bg-white" value="${data.out_of_territory || ''}"></td>
                 <td class="p-2 text-center">
                     <button type="button" class="delete-row-btn text-red-500 hover:text-red-700 p-1 rounded transition-colors" title="Remove row">
                         <i class="fa-solid fa-trash-can"></i>
@@ -252,36 +262,32 @@
             jobRowsContainer.appendChild(tr);
         }
 
-        // Initialize with 1 default job row
-        addJobRow();
-        document.getElementById('add-row-btn').addEventListener('click', () => addJobRow());
-
         // --- MULTI-LINE REIMBURSEMENT ROWS ---
-        function addReimbRow() {
+        function addReimbRow(data = {}) {
             noReimbMsg.classList.add('hidden');
             const tr = document.createElement('tr');
             tr.className = "hover:bg-gray-100 transition-colors reimb-row";
 
             tr.innerHTML = `
                 <td class="p-2">
-                    <input type="text" placeholder="Job #" class="reimb-job w-full p-1.5 border rounded text-sm bg-white" required>
+                    <input type="text" placeholder="Job #" class="reimb-job w-full p-1.5 border rounded text-sm bg-white" value="${data.job_number || ''}" required>
                 </td>
                 <td class="p-2">
                     <select class="reimb-type w-full p-1.5 border rounded text-sm bg-white" required>
-                        <option value="" disabled selected>Select Type</option>
-                        <option value="Mileage">Mileage (Qty)</option>
-                        <option value="Parking">Parking ($)</option>
-                        <option value="Tolls">Tolls ($)</option>
-                        <option value="Hauling">Hauling ($)</option>
-                        <option value="Phone">Phone ($)</option>
-                        <option value="Other">Other ($)</option>
+                        <option value="" disabled ${!data.expense_type ? 'selected' : ''}>Select Type</option>
+                        <option value="Mileage" ${data.expense_type === 'Mileage' ? 'selected' : ''}>Mileage (Qty)</option>
+                        <option value="Parking" ${data.expense_type === 'Parking' ? 'selected' : ''}>Parking ($)</option>
+                        <option value="Tolls" ${data.expense_type === 'Tolls' ? 'selected' : ''}>Tolls ($)</option>
+                        <option value="Hauling" ${data.expense_type === 'Hauling' ? 'selected' : ''}>Hauling ($)</option>
+                        <option value="Phone" ${data.expense_type === 'Phone' ? 'selected' : ''}>Phone ($)</option>
+                        <option value="Other" ${data.expense_type === 'Other' ? 'selected' : ''}>Other ($)</option>
                     </select>
                 </td>
                 <td class="p-2">
-                    <input type="number" step="any" min="0.01" placeholder="0.00" class="reimb-amount w-full p-1.5 border rounded text-sm bg-white" required>
+                    <input type="number" step="any" min="0.01" placeholder="0.00" class="reimb-amount w-full p-1.5 border rounded text-sm bg-white" value="${data.amount_qty || ''}" required>
                 </td>
                 <td class="p-2">
-                    <input type="text" placeholder="Notes (Optional)" class="reimb-notes w-full p-1.5 border rounded text-sm bg-white">
+                    <input type="text" placeholder="Notes (Optional)" class="reimb-notes w-full p-1.5 border rounded text-sm bg-white" value="${data.notes || ''}">
                 </td>
                 <td class="p-2 text-center">
                     <button type="button" class="delete-reimb-btn text-red-500 hover:text-red-700 p-1 rounded transition-colors" title="Remove expense">
@@ -300,9 +306,10 @@
             reimbRowsContainer.appendChild(tr);
         }
 
+        document.getElementById('add-row-btn').addEventListener('click', () => addJobRow());
         document.getElementById('add-reimb-btn').addEventListener('click', () => addReimbRow());
 
-        // Session Control
+        // Login & Auth Control
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 loginScreen.classList.add('hidden');
@@ -331,6 +338,11 @@
                 } else {
                     employeeView.classList.remove('hidden'); 
                 }
+
+                // Initialize Date and load existing draft if any
+                dateInput.valueAsDate = new Date();
+                loadTimesheetDataForDate(dateInput.value);
+
             } else {
                 loginScreen.classList.remove('hidden');
                 appScreen.classList.add('hidden');
@@ -340,26 +352,20 @@
             }
         });
 
-        // Login
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
             errorMsg.classList.add('hidden');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            signInWithEmailAndPassword(auth, email, password)
-                .catch((error) => {
-                    errorMsg.innerText = "Error: " + error.code;
-                    errorMsg.classList.remove('hidden');
-                });
+            signInWithEmailAndPassword(auth, email, password).catch((error) => {
+                errorMsg.innerText = "Error: " + error.code;
+                errorMsg.classList.remove('hidden');
+            });
         });
 
-        // Logout
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth);
-        });
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // Password Reset
         document.getElementById('forgot-password').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             if(!email) {
@@ -371,17 +377,121 @@
                 .catch((error) => showToast("Error: " + error.message, "error"));
         });
 
-        // Submit Timesheet with File Uploads
-        tsForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); 
+        // --- LOAD EXISTING TIMESHEET LOGIC ---
+        dateInput.addEventListener('change', (e) => {
+            loadTimesheetDataForDate(e.target.value);
+        });
+
+        async function loadTimesheetDataForDate(selectedDate) {
+            if(!auth.currentUser) return;
             
-            // UI Feedback during upload
+            // Generate predictable ID: email_YYYY-MM-DD
+            const docId = `${auth.currentUser.email}_${selectedDate}`;
+            const docRef = doc(db, "timesheets", docId);
+            
+            // Reset UI State
+            jobRowsContainer.innerHTML = '';
+            reimbRowsContainer.innerHTML = '';
+            noReimbMsg.classList.remove('hidden');
+            submitBtn.disabled = false;
+            saveDraftBtn.disabled = false;
+            tsForm.classList.remove('opacity-75', 'pointer-events-none');
+            statusBanner.classList.add('hidden');
+            statusBanner.className = "hidden mb-4 p-3 rounded text-sm font-bold flex items-center gap-2"; // reset classes
+
+            try {
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Handle Status Display
+                    statusBanner.classList.remove('hidden');
+                    if(data.status === 'submitted') {
+                        statusBanner.classList.add('bg-green-100', 'text-green-800');
+                        statusBanner.innerHTML = `<i class="fa-solid fa-lock"></i> Timesheet for this date has already been SUBMITTED. (Read Only)`;
+                        // Lock the form
+                        submitBtn.disabled = true;
+                        saveDraftBtn.disabled = true;
+                        tsForm.classList.add('opacity-75', 'pointer-events-none');
+                    } else {
+                        statusBanner.classList.add('bg-yellow-100', 'text-yellow-800');
+                        statusBanner.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> You have a DRAFT saved for this date. Continue editing below.`;
+                    }
+
+                    // Populate Rows
+                    if (data.job_entries && data.job_entries.length > 0) {
+                        data.job_entries.forEach(job => addJobRow(job));
+                    } else { addJobRow(); }
+
+                    if (data.reimbursements && data.reimbursements.length > 0) {
+                        data.reimbursements.forEach(r => addReimbRow(r));
+                    }
+
+                } else {
+                    // Fresh date, add 1 empty row
+                    addJobRow();
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                addJobRow();
+            }
+        }
+
+        // --- PREVIOUS WORKDAY CHECKER ---
+        function getPreviousWorkday(dateString) {
+            // Parse date strictly as local to avoid timezone shifts
+            const [year, month, day] = dateString.split('-');
+            const d = new Date(year, month - 1, day);
+            
+            let dayOfWeek = d.getDay(); // 0 = Sun, 1 = Mon, ... 6 = Sat
+            let subtractDays = 1;
+            
+            if (dayOfWeek === 0) subtractDays = 2; // Sunday -> Friday
+            else if (dayOfWeek === 1) subtractDays = 3; // Monday -> Friday
+            
+            d.setDate(d.getDate() - subtractDays);
+            
+            // Format back to YYYY-MM-DD
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${dd}`;
+        }
+
+        // --- SAVE DRAFT & SUBMIT LOGIC ---
+        
+        saveDraftBtn.addEventListener('click', () => processTimesheet('draft'));
+        tsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            processTimesheet('submitted');
+        });
+
+        async function processTimesheet(actionStatus) {
+            // UI Feedback
             submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            saveDraftBtn.disabled = true;
             loadingSpinner.classList.remove('hidden');
 
             try {
-                // 1. Collect Job Rows Data
+                const selectedDate = dateInput.value;
+
+                // 1. If SUBMITTING, check previous workday compliance
+                if (actionStatus === 'submitted') {
+                    const prevDate = getPreviousWorkday(selectedDate);
+                    const prevDocId = `${auth.currentUser.email}_${prevDate}`;
+                    const prevDocSnap = await getDoc(doc(db, "timesheets", prevDocId));
+                    
+                    if (!prevDocSnap.exists() || prevDocSnap.data().status !== 'submitted') {
+                        showToast(`ACTION REQUIRED: You cannot submit today's timesheet until you submit your timesheet for the previous workday (${prevDate}).`, "error");
+                        // Unlock UI
+                        submitBtn.disabled = false;
+                        saveDraftBtn.disabled = false;
+                        loadingSpinner.classList.add('hidden');
+                        return; // Stop execution
+                    }
+                }
+
+                // 2. Collect Job Rows Data
                 const jobRows = [];
                 let totalWorkHours = 0;
                 
@@ -409,7 +519,7 @@
                     }
                 });
 
-                // 2. Collect Reimbursements
+                // 3. Collect Reimbursements
                 const reimbRowsData = [];
                 const rRows = reimbRowsContainer.querySelectorAll('.reimb-row');
                 let totalReimbursements = 0;
@@ -422,7 +532,6 @@
                     
                     if (amount > 0) {
                         totalReimbursements += amount;
-                        
                         reimbRowsData.push({
                             job_number: jobNum,
                             expense_type: type,
@@ -432,44 +541,63 @@
                     }
                 }
 
-                // 3. VALIDATION: Prevent Zero Submissions
-                if (totalWorkHours === 0 && totalReimbursements === 0) {
-                    throw new Error("Cannot submit an empty timesheet. Please enter work hours or reimbursements.");
+                // 4. VALIDATION: Prevent Zero Submissions
+                if (totalWorkHours === 0 && totalReimbursements === 0 && actionStatus === 'submitted') {
+                    showToast("Error: All fields are zero. Cannot submit an empty timesheet.", "error");
+                    submitBtn.disabled = false;
+                    saveDraftBtn.disabled = false;
+                    loadingSpinner.classList.add('hidden');
+                    return;
                 }
 
-                // 4. Save to Firestore
+                // Validate Job Numbers if hours exist
+                for (let i = 0; i < jobRows.length; i++) {
+                    const r = jobRows[i];
+                    const hasHours = (r.regular_hours + r.overtime_hours + r.double_time_hours + r.high_rate_hours) > 0;
+                    if (hasHours && (!r.job_number || r.job_number === "GENERAL")) {
+                        showToast(`Row #${i + 1} has hours entered but is missing a valid Job #.`, "error");
+                        submitBtn.disabled = false;
+                        saveDraftBtn.disabled = false;
+                        loadingSpinner.classList.add('hidden');
+                        return;
+                    }
+                }
+
+                // 5. Save to Firestore using setDoc (Predictable ID)
+                const docId = `${auth.currentUser.email}_${selectedDate}`;
                 const formData = {
                     employee_email: auth.currentUser.email,
-                    date: document.getElementById('ts-date').value,
+                    date: selectedDate,
+                    status: actionStatus, // 'draft' or 'submitted'
                     job_entries: jobRows,
                     reimbursements: reimbRowsData,
                     total_hours: totalWorkHours,
                     total_reimbursements: totalReimbursements,
-                    created_at: serverTimestamp() 
+                    last_updated: serverTimestamp() 
                 };
 
-                await addDoc(collection(db, "timesheets"), formData);
+                // Use setDoc with merge: true to overwrite or create
+                await setDoc(doc(db, "timesheets", docId), formData, { merge: true });
 
-                showToast("Timesheet submitted successfully!", "success");
-                
-                // 5. Reset Form
-                tsForm.reset();
-                document.getElementById('ts-date').valueAsDate = new Date();
-                jobRowsContainer.innerHTML = "";
-                addJobRow(); // Reset to one blank job row
-                reimbRowsContainer.innerHTML = ""; // Clear all reimb rows
-                noReimbMsg.classList.remove('hidden');
+                if (actionStatus === 'draft') {
+                    showToast("Draft saved successfully! You can return to this later.", "success");
+                    // Refresh view
+                    loadTimesheetDataForDate(selectedDate);
+                } else {
+                    showToast("Timesheet FINALIZED and submitted successfully!", "success");
+                    // Reset Form to today
+                    tsForm.reset();
+                    dateInput.valueAsDate = new Date();
+                    loadTimesheetDataForDate(dateInput.value);
+                }
 
             } catch (error) {
                 console.error("Submission Error: ", error);
                 showToast(error.message || "There was an error saving your timesheet. Please check your connection.", "error");
             } finally {
-                // Restore UI state
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 loadingSpinner.classList.add('hidden');
             }
-        });
+        }
 
     </script>
 </body>
