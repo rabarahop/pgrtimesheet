@@ -276,11 +276,8 @@
                                 </div>
                                 <div>
                                     <label class="block text-gray-700 text-xs font-bold mb-1 uppercase">Role</label>
+                                    <!-- Las opciones se generarán por JavaScript dependiendo de quién inicie sesión -->
                                     <select id="new-user-role" class="w-full p-2 border rounded focus:outline-none focus:border-orange-500 text-sm" required>
-                                        <option value="empleado">Employee (General)</option>
-                                        <option value="contabilidad">Accounting (Contabilidad)</option>
-                                        <option value="contralor">Controller (Contralor)</option>
-                                        <option value="propietario">Owner (Propietario)</option>
                                     </select>
                                 </div>
                                 <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded shadow transition-colors text-sm">
@@ -331,7 +328,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
-        // Añadidos getDocs, query y where para la búsqueda administrativa
         import { getFirestore, doc, getDoc, setDoc, collection, serverTimestamp, getDocs, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 
         // FECHA DE INICIO OFICIAL DEL SISTEMA
@@ -424,7 +420,6 @@
 
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
-            // Solo establecer el temporizador si el usuario ha iniciado sesión
             if (auth.currentUser) {
                 inactivityTimer = setTimeout(() => {
                     signOut(auth).then(() => {
@@ -434,33 +429,27 @@
             }
         }
 
-        // Escuchar eventos de actividad del usuario en toda la página
         ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
             document.addEventListener(evt, resetInactivityTimer);
         });
 
         // --- TAB NAVIGATION LOGIC ---
         function switchTab(activeTabId, activeViewId) {
-            // Reset all tabs
             [tabMyTs, tabAllTs, tabUsers].forEach(tab => {
                 tab.classList.remove('border-blue-600', 'text-blue-600');
                 tab.classList.add('border-transparent', 'text-gray-500');
             });
-            // Set active tab
             const activeTab = document.getElementById(activeTabId);
             activeTab.classList.remove('border-transparent', 'text-gray-500');
             activeTab.classList.add('border-blue-600', 'text-blue-600');
 
-            // Hide all views
             [viewMyTs, viewAllTs, viewUsers].forEach(v => v.classList.add('hidden'));
-            // Show active view
             document.getElementById(activeViewId).classList.remove('hidden');
         }
 
         tabMyTs.addEventListener('click', () => switchTab('tab-my-timesheet', 'view-my-timesheet'));
         tabAllTs.addEventListener('click', () => {
             switchTab('tab-all-timesheets', 'view-all-timesheets');
-            // Auto load if empty
             if(adminTsTableBody.innerHTML.includes('Click "Search"')) {
                 loadAdminTimesheets();
             }
@@ -487,7 +476,6 @@
                 currentUserRole = "empleado"; 
                 if (docSnap.exists()) {
                     currentUserRole = docSnap.data().rol.toLowerCase();
-                    // Optional: Check if user is deactivated
                     if(docSnap.data().status === 'inactive') {
                         signOut(auth);
                         alert("Su cuenta ha sido desactivada. Contacte a la administración.");
@@ -502,12 +490,11 @@
                 if(currentUserRole === 'contabilidad') displayRole = 'accounting';
                 document.getElementById('user-display-role').innerText = displayRole;
 
-                // 3. Setup Permissions (Tabs logic)
+                // 3. Setup Permissions (Tabs logic & Role dropdown)
                 if (['propietario', 'contralor', 'contabilidad', 'admin', 'owner'].includes(currentUserRole)) {
                     appTabsContainer.classList.remove('hidden');
-                    tabAllTs.classList.remove('hidden'); // Everyone admin-like can see all timesheets
+                    tabAllTs.classList.remove('hidden');
                     
-                    // Only Owners & Controllers can manage users
                     if (['propietario', 'contralor', 'owner'].includes(currentUserRole)) {
                         tabUsers.classList.remove('hidden');
                     } else {
@@ -517,13 +504,26 @@
                     appTabsContainer.classList.add('hidden');
                 }
 
+                // Generar dinámicamente las opciones del Rol dependiendo si es dueño
+                const roleSelect = document.getElementById('new-user-role');
+                if (roleSelect) {
+                    roleSelect.innerHTML = `
+                        <option value="empleado">Employee (General)</option>
+                        <option value="contabilidad">Accounting (Contabilidad)</option>
+                        <option value="contralor">Controller (Contralor)</option>
+                    `;
+                    // SOLO el propietario puede ver y crear otros propietarios
+                    if (['propietario', 'owner'].includes(currentUserRole)) {
+                        roleSelect.innerHTML += `<option value="propietario">Owner (Propietario)</option>`;
+                    }
+                }
+
                 // Default Reset View
                 switchTab('tab-my-timesheet', 'view-my-timesheet');
                 dateInput.valueAsDate = new Date();
                 loadTimesheetDataForDate(dateInput.value);
                 loadRecentActivity(user.email);
                 
-                // Iniciar el temporizador de inactividad
                 resetInactivityTimer();
 
             } else {
@@ -531,8 +531,6 @@
                 appScreen.classList.add('hidden');
                 appScreen.classList.remove('flex');
                 currentUserRole = "empleado";
-                
-                // Limpiar el temporizador si cierra sesión
                 clearTimeout(inactivityTimer);
             }
         });
@@ -563,7 +561,7 @@
         });
 
         // ==========================================
-        // MODULE 1: MY TIMESHEET LOGIC (Unchanged, copied from previous)
+        // MODULE 1: MY TIMESHEET LOGIC (Unchanged)
         // ==========================================
         function addJobRow(data = {}) {
             const tr = document.createElement('tr');
@@ -889,6 +887,9 @@
             }
 
             const excelRows = [];
+            
+            // Variables para acumular los totales
+            let sumReg = 0, sumOt = 0, sumDt = 0, sumHr = 0, sumExp = 0;
 
             currentAdminData.forEach(ts => {
                 const baseInfo = {
@@ -899,14 +900,24 @@
 
                 if (ts.job_entries && ts.job_entries.length > 0) {
                     ts.job_entries.forEach(job => {
+                        const reg = job.regular_hours || 0;
+                        const ot = job.overtime_hours || 0;
+                        const dt = job.double_time_hours || 0;
+                        const hr = job.high_rate_hours || 0;
+                        
+                        sumReg += reg;
+                        sumOt += ot;
+                        sumDt += dt;
+                        sumHr += hr;
+
                         excelRows.push({
                             ...baseInfo,
                             "Record Type": "Work Hours",
                             "Job #": job.job_number,
-                            "Regular Hours": job.regular_hours || 0,
-                            "Overtime Hours": job.overtime_hours || 0,
-                            "Double Time": job.double_time_hours || 0,
-                            "High Rate": job.high_rate_hours || 0,
+                            "Regular Hours": reg,
+                            "Overtime Hours": ot,
+                            "Double Time": dt,
+                            "High Rate": hr,
                             "Expense Amount": 0,
                             "Notes / Territory": job.out_of_territory || ""
                         });
@@ -915,6 +926,9 @@
 
                 if (ts.reimbursements && ts.reimbursements.length > 0) {
                     ts.reimbursements.forEach(r => {
+                        const amt = r.amount_qty || 0;
+                        sumExp += amt;
+                        
                         excelRows.push({
                             ...baseInfo,
                             "Record Type": "Expense - " + r.expense_type,
@@ -923,11 +937,26 @@
                             "Overtime Hours": 0,
                             "Double Time": 0,
                             "High Rate": 0,
-                            "Expense Amount": r.amount_qty || 0,
+                            "Expense Amount": amt,
                             "Notes / Territory": r.notes || ""
                         });
                     });
                 }
+            });
+
+            // INYECTAR FILA DE TOTALES AL FINAL
+            excelRows.push({
+                "Date": "TOTALS",
+                "Employee Email": "",
+                "Status": "",
+                "Record Type": "",
+                "Job #": "",
+                "Regular Hours": sumReg,
+                "Overtime Hours": sumOt,
+                "Double Time": sumDt,
+                "High Rate": sumHr,
+                "Expense Amount": sumExp,
+                "Notes / Territory": ""
             });
 
             const worksheet = XLSX.utils.json_to_sheet(excelRows);
