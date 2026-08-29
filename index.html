@@ -56,9 +56,9 @@
         </nav>
 
         <!-- Dynamic Content -->
-        <div class="p-4 md:p-8 flex-1 max-w-6xl mx-auto w-full">
+        <div class="p-4 md:p-8 flex-1 max-w-7xl mx-auto w-full">
             
-            <!-- EMPLOYEE VIEW (Timesheet Form) -->
+            <!-- EMPLOYEE VIEW -->
             <div id="employee-view" class="hidden bg-white p-6 rounded shadow-md border-t-4 border-blue-500 mb-6 relative">
                 
                 <!-- Status Banner for Draft/Submitted States -->
@@ -71,94 +71,113 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 text-xs font-bold mb-1 uppercase">Select Date</label>
-                        <!-- Added min logic via HTML: Only 2026-08-20 onwards is selectable -->
                         <input type="date" id="ts-date" min="2026-08-20" class="p-2 border rounded focus:outline-none focus:border-blue-500 text-sm font-bold bg-blue-50 text-blue-900 cursor-pointer hover:bg-blue-100 transition" required>
                     </div>
                 </div>
 
-                <form id="timesheet-form" class="space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
-                    <!-- SECTION 1: WORK HOURS & MULTI-LINE JOBS -->
-                    <div class="bg-gray-50 p-4 rounded border">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h4 class="font-bold text-blue-800">Work Hours & Jobs</h4>
-                            <button type="button" id="add-row-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1">
-                                <i class="fa-solid fa-plus"></i> Add Job Row
-                            </button>
-                        </div>
+                    <!-- LEFT COLUMN: TIMESHEET FORM (Takes up 2/3 of space) -->
+                    <div class="lg:col-span-2">
+                        <form id="timesheet-form" class="space-y-6">
+                            <!-- SECTION 1: WORK HOURS & MULTI-LINE JOBS -->
+                            <div class="bg-gray-50 p-4 rounded border">
+                                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                    <h4 class="font-bold text-blue-800">Work Hours & Jobs</h4>
+                                    <button type="button" id="add-row-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1">
+                                        <i class="fa-solid fa-plus"></i> Add Job Row
+                                    </button>
+                                </div>
 
-                        <!-- Table Container for Rows -->
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse" id="job-rows-table">
-                                <thead>
-                                    <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
-                                        <th class="p-2 w-36">Job #</th>
-                                        <th class="p-2 w-24">Regular</th>
-                                        <th class="p-2 w-24">Overtime</th>
-                                        <th class="p-2 w-24">Double Time</th>
-                                        <th class="p-2 w-24">High Rate</th>
-                                        <th class="p-2">Out of Territory Notes</th>
-                                        <th class="p-2 w-12 text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="job-rows-container" class="divide-y divide-gray-200">
-                                    <!-- Dynamic rows injected via JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- SECTION 2: REIMBURSEMENTS (Multi-line) -->
-                    <div class="bg-gray-50 p-4 rounded border">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <div>
-                                <h4 class="font-bold text-blue-800">Reimbursements</h4>
-                                <p class="text-xs text-gray-500 font-bold">Receipt upload feature is temporarily disabled for this prototype.</p>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse" id="job-rows-table">
+                                        <thead>
+                                            <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
+                                                <th class="p-2 w-36">Job #</th>
+                                                <th class="p-2 w-24">Regular</th>
+                                                <th class="p-2 w-24">Overtime</th>
+                                                <th class="p-2 w-24">Double Time</th>
+                                                <th class="p-2 w-24">High Rate</th>
+                                                <th class="p-2">Out of Territory Notes</th>
+                                                <th class="p-2 w-12 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="job-rows-container" class="divide-y divide-gray-200">
+                                            <!-- Dynamic rows injected via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <button type="button" id="add-reimb-btn" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1">
-                                <i class="fa-solid fa-plus"></i> Add Expense
-                            </button>
-                        </div>
 
-                        <!-- Table Container for Reimbursements -->
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse" id="reimb-rows-table">
-                                <thead>
-                                    <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
-                                        <th class="p-2 w-36">Job #</th>
-                                        <th class="p-2 w-40">Expense Type</th>
-                                        <th class="p-2 w-24">Amount / Qty</th>
-                                        <th class="p-2">Notes</th>
-                                        <th class="p-2 w-12 text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="reimb-rows-container" class="divide-y divide-gray-200">
-                                    <!-- Dynamic reimbursement rows injected via JS -->
-                                </tbody>
-                            </table>
-                            <div id="no-reimb-msg" class="text-center p-4 text-gray-500 text-sm italic">
-                                No reimbursements added. Click "Add Expense" if needed.
+                            <!-- SECTION 2: REIMBURSEMENTS (Multi-line) -->
+                            <div class="bg-gray-50 p-4 rounded border">
+                                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                    <div>
+                                        <h4 class="font-bold text-blue-800">Reimbursements</h4>
+                                        <p class="text-xs text-gray-500 font-bold">Receipt upload feature is temporarily disabled for this prototype.</p>
+                                    </div>
+                                    <button type="button" id="add-reimb-btn" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1">
+                                        <i class="fa-solid fa-plus"></i> Add Expense
+                                    </button>
+                                </div>
+
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse" id="reimb-rows-table">
+                                        <thead>
+                                            <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
+                                                <th class="p-2 w-36">Job #</th>
+                                                <th class="p-2 w-40">Expense Type</th>
+                                                <th class="p-2 w-24">Amount / Qty</th>
+                                                <th class="p-2">Notes</th>
+                                                <th class="p-2 w-12 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="reimb-rows-container" class="divide-y divide-gray-200">
+                                            <!-- Dynamic reimbursement rows injected via JS -->
+                                        </tbody>
+                                    </table>
+                                    <div id="no-reimb-msg" class="text-center p-4 text-gray-500 text-sm italic">
+                                        No reimbursements added. Click "Add Expense" if needed.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Buttons -->
+                            <div class="pt-4 flex flex-col md:flex-row justify-between items-center gap-4 border-t">
+                                <div id="loading-spinner" class="hidden flex items-center gap-2 text-blue-600 font-bold w-full md:w-auto justify-center">
+                                    <i class="fa-solid fa-spinner fa-spin text-2xl"></i> Processing...
+                                </div>
+                                
+                                <div class="flex w-full md:w-auto gap-4 ml-auto">
+                                    <button type="button" id="save-draft-btn" class="w-full md:w-auto bg-gray-500 text-white font-bold py-3 px-6 rounded hover:bg-gray-600 shadow-md transition-colors text-sm flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                                    </button>
+                                    <button type="submit" id="submit-ts-btn" class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded hover:bg-green-700 shadow-md transition-colors text-lg flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-paper-plane"></i> Final Submit
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- RIGHT COLUMN: RECENT ACTIVITY SUMMARY (Takes up 1/3 of space) -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-gray-50 p-4 rounded border h-full">
+                            <h4 class="font-bold text-blue-800 border-b pb-2 mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-check text-blue-600"></i> Recent Activity (Last 7 Days)
+                            </h4>
+                            <p class="text-xs text-gray-500 mb-4">Click on any date below to view or edit its timesheet.</p>
+                            
+                            <div id="recent-activity-list" class="space-y-3">
+                                <!-- Dynamic recent activity injected via JS -->
+                                <div class="text-center text-gray-500 text-sm py-4">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Loading history...
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Submit Buttons -->
-                    <div class="pt-4 flex flex-col md:flex-row justify-between items-center gap-4 border-t">
-                        <!-- Loading spinner -->
-                        <div id="loading-spinner" class="hidden flex items-center gap-2 text-blue-600 font-bold w-full md:w-auto justify-center">
-                            <i class="fa-solid fa-spinner fa-spin text-2xl"></i> Processing...
-                        </div>
-                        
-                        <div class="flex w-full md:w-auto gap-4 ml-auto">
-                            <button type="button" id="save-draft-btn" class="w-full md:w-auto bg-gray-500 text-white font-bold py-3 px-6 rounded hover:bg-gray-600 shadow-md transition-colors text-sm flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-floppy-disk"></i> Save Draft
-                            </button>
-                            <button type="submit" id="submit-ts-btn" class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded hover:bg-green-700 shadow-md transition-colors text-lg flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-paper-plane"></i> Final Submit
-                            </button>
-                        </div>
-                    </div>
-                </form>
+                </div> <!-- End of Grid -->
             </div>
 
             <!-- ADMIN VIEW (Database) -->
@@ -173,7 +192,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
-        // IMPORTANTE: Agregamos setDoc para poder actualizar borradores sin crear duplicados
         import { getFirestore, doc, getDoc, setDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 
         // FECHA DE INICIO OFICIAL DEL SISTEMA
@@ -208,6 +226,7 @@
         const saveDraftBtn = document.getElementById('save-draft-btn');
         const dateInput = document.getElementById('ts-date');
         const statusBanner = document.getElementById('status-banner');
+        const recentActivityList = document.getElementById('recent-activity-list');
 
         // Toast Notification System (Sticky / Floating)
         function showToast(message, type = 'success') {
@@ -233,7 +252,7 @@
             setTimeout(() => {
                 toast.classList.add('translate-y-2', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
-            }, 6000); // Extended time slightly for reading longer warnings
+            }, 6000); 
         }
 
         // --- MULTI-LINE JOB ROWS ---
@@ -312,6 +331,85 @@
         document.getElementById('add-row-btn').addEventListener('click', () => addJobRow());
         document.getElementById('add-reimb-btn').addEventListener('click', () => addReimbRow());
 
+        // --- LOAD RECENT ACTIVITY (LAST 7 DAYS) ---
+        async function loadRecentActivity(email) {
+            recentActivityList.innerHTML = '<div class="text-center text-gray-500 text-sm py-4"><i class="fa-solid fa-spinner fa-spin"></i> Updating...</div>';
+            
+            const today = new Date();
+            const datesToFetch = [];
+            
+            // Calculate last 7 dates
+            for(let i=0; i<7; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const dateStr = `${y}-${m}-${dd}`;
+                
+                // Don't fetch dates before system start
+                if(dateStr >= SYSTEM_START_DATE) {
+                    datesToFetch.push(dateStr);
+                }
+            }
+
+            try {
+                // Fetch all documents concurrently for speed
+                const promises = datesToFetch.map(dateStr => getDoc(doc(db, "timesheets", `${email}_${dateStr}`)));
+                const snapshots = await Promise.all(promises);
+
+                let html = '';
+                
+                snapshots.forEach((snap, index) => {
+                    const dateStr = datesToFetch[index];
+                    // Create a local date object to avoid timezone shifts when formatting
+                    const [year, month, day] = dateStr.split('-');
+                    const dateObj = new Date(year, month - 1, day);
+                    const displayDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    
+                    let statusBadge = `<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-[10px] font-bold uppercase tracking-wide border border-red-200">Missing</span>`;
+                    let hoursDisplay = `-`;
+
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.status === 'submitted') {
+                            statusBadge = `<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-[10px] font-bold uppercase tracking-wide border border-green-200"><i class="fa-solid fa-check"></i> Submitted</span>`;
+                        } else if (data.status === 'draft') {
+                            statusBadge = `<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-[10px] font-bold uppercase tracking-wide border border-yellow-200"><i class="fa-solid fa-pen"></i> Draft</span>`;
+                        }
+                        hoursDisplay = `${data.total_hours || 0} <span class="text-[10px]">hrs</span>`;
+                    }
+
+                    // Card Item - Clickable to load date
+                    html += `
+                        <div class="flex justify-between items-center p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer" onclick="changeDateAndLoad('${dateStr}')">
+                            <div>
+                                <div class="text-sm font-bold text-gray-800">${displayDate}</div>
+                                <div class="text-xs text-gray-500 font-semibold mt-1"><i class="fa-regular fa-clock"></i> ${hoursDisplay}</div>
+                            </div>
+                            <div>${statusBadge}</div>
+                        </div>
+                    `;
+                });
+
+                if(html === '') html = '<div class="text-sm text-gray-500 text-center">No recent dates available.</div>';
+                recentActivityList.innerHTML = html;
+
+            } catch (error) {
+                console.error("Error loading activity:", error);
+                recentActivityList.innerHTML = '<div class="text-sm text-red-500 text-center">Failed to load history.</div>';
+            }
+        }
+
+        // Helper function for the onclick event in the list
+        window.changeDateAndLoad = function(dateStr) {
+            dateInput.value = dateStr;
+            dateInput.dispatchEvent(new Event('change'));
+            // Scroll up to the form smoothly
+            document.getElementById('employee-view').scrollIntoView({ behavior: 'smooth' });
+        }
+
+
         // Login & Auth Control
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -345,6 +443,9 @@
                 // Initialize Date and load existing draft if any
                 dateInput.valueAsDate = new Date();
                 loadTimesheetDataForDate(dateInput.value);
+                
+                // Load the weekly summary
+                loadRecentActivity(user.email);
 
             } else {
                 loginScreen.classList.remove('hidden');
@@ -388,7 +489,6 @@
         async function loadTimesheetDataForDate(selectedDate) {
             if(!auth.currentUser) return;
             
-            // Generate predictable ID: email_YYYY-MM-DD
             const docId = `${auth.currentUser.email}_${selectedDate}`;
             const docRef = doc(db, "timesheets", docId);
             
@@ -400,7 +500,7 @@
             saveDraftBtn.disabled = false;
             tsForm.classList.remove('opacity-75', 'pointer-events-none');
             statusBanner.classList.add('hidden');
-            statusBanner.className = "hidden mb-4 p-3 rounded text-sm font-bold flex items-center gap-2"; // reset classes
+            statusBanner.className = "hidden mb-4 p-3 rounded text-sm font-bold flex items-center gap-2"; 
 
             try {
                 const docSnap = await getDoc(docRef);
@@ -431,7 +531,6 @@
                     }
 
                 } else {
-                    // Fresh date, add 1 empty row
                     addJobRow();
                 }
             } catch (error) {
@@ -442,11 +541,10 @@
 
         // --- PREVIOUS WORKDAY CHECKER ---
         function getPreviousWorkday(dateString) {
-            // Parse date strictly as local to avoid timezone shifts
             const [year, month, day] = dateString.split('-');
             const d = new Date(year, month - 1, day);
             
-            let dayOfWeek = d.getDay(); // 0 = Sun, 1 = Mon, ... 6 = Sat
+            let dayOfWeek = d.getDay(); 
             let subtractDays = 1;
             
             if (dayOfWeek === 0) subtractDays = 2; // Sunday -> Friday
@@ -454,7 +552,6 @@
             
             d.setDate(d.getDate() - subtractDays);
             
-            // Format back to YYYY-MM-DD
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
             const dd = String(d.getDate()).padStart(2, '0');
@@ -482,18 +579,16 @@
                 if (actionStatus === 'submitted') {
                     const prevDate = getPreviousWorkday(selectedDate);
                     
-                    // APLICAMOS LA REGLA DE LA FECHA DE INICIO DEL SISTEMA
                     if (prevDate >= SYSTEM_START_DATE) {
                         const prevDocId = `${auth.currentUser.email}_${prevDate}`;
                         const prevDocSnap = await getDoc(doc(db, "timesheets", prevDocId));
                         
                         if (!prevDocSnap.exists() || prevDocSnap.data().status !== 'submitted') {
                             showToast(`ACTION REQUIRED: You cannot submit today's timesheet until you submit your timesheet for the previous workday (${prevDate}).`, "error");
-                            // Unlock UI
                             submitBtn.disabled = false;
                             saveDraftBtn.disabled = false;
                             loadingSpinner.classList.add('hidden');
-                            return; // Stop execution
+                            return; 
                         }
                     }
                 }
@@ -570,12 +665,12 @@
                     }
                 }
 
-                // 5. Save to Firestore using setDoc (Predictable ID)
+                // 5. Save to Firestore
                 const docId = `${auth.currentUser.email}_${selectedDate}`;
                 const formData = {
                     employee_email: auth.currentUser.email,
                     date: selectedDate,
-                    status: actionStatus, // 'draft' or 'submitted'
+                    status: actionStatus, 
                     job_entries: jobRows,
                     reimbursements: reimbRowsData,
                     total_hours: totalWorkHours,
@@ -583,20 +678,20 @@
                     last_updated: serverTimestamp() 
                 };
 
-                // Use setDoc with merge: true to overwrite or create
                 await setDoc(doc(db, "timesheets", docId), formData, { merge: true });
 
                 if (actionStatus === 'draft') {
                     showToast("Draft saved successfully! You can return to this later.", "success");
-                    // Refresh view
                     loadTimesheetDataForDate(selectedDate);
                 } else {
                     showToast("Timesheet FINALIZED and submitted successfully!", "success");
-                    // Reset Form to today
                     tsForm.reset();
                     dateInput.valueAsDate = new Date();
                     loadTimesheetDataForDate(dateInput.value);
                 }
+                
+                // UPDATING THE WEEKLY SUMMARY PANEL AFTER SAVING
+                loadRecentActivity(auth.currentUser.email);
 
             } catch (error) {
                 console.error("Submission Error: ", error);
