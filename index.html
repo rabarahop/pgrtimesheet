@@ -409,25 +409,6 @@
                     }
                 });
 
-                // 2. Collect Reimbursements & Upload Files
-                const reimbRowsData = [];
-                const rRows = reimbRowsContainer.querySelectorAll('.reimb-row');
-                let totalReimbursements = 0;
-
-                // We use a for...of loop because we need to await the file uploads
-                for (const tr of rRows) {
-                    const jobNum = tr.querySelector('.reimb-job').value.trim();
-                    const type = tr.querySelector('.reimb-type').value;
-                    const amount = Number(tr.querySelector('.reimb-amount').value) || 0;
-                    const notes = tr.querySelector('.reimb-notes').value.trim();
-                    const fileInput = tr.querySelector('.reimb-file');
-                    
-                    if (amount > 0) {
-                        totalReimbursements += amount;
-                        
-                        // Enforce file selection if amount > 0 (HTML required attribute should catch this, but double checking)
-                        if (fileInput.files.length === 0) {
-                            throw new Error(`Receipt missing for ${type} on Job ${jobNum}. Receipts are mandatory.`);
                 // 2. Collect Reimbursements
                 const reimbRowsData = [];
                 const rRows = reimbRowsContainer.querySelectorAll('.reimb-row');
@@ -461,7 +442,7 @@
                     employee_email: auth.currentUser.email,
                     date: document.getElementById('ts-date').value,
                     job_entries: jobRows,
-                    reimbursements: reimbRowsData, // The array of objects containing the image URLs
+                    reimbursements: reimbRowsData,
                     total_hours: totalWorkHours,
                     total_reimbursements: totalReimbursements,
                     created_at: serverTimestamp() 
@@ -469,7 +450,7 @@
 
                 await addDoc(collection(db, "timesheets"), formData);
 
-                showToast("Timesheet and receipts submitted successfully!", "success");
+                showToast("Timesheet submitted successfully!", "success");
                 
                 // 5. Reset Form
                 tsForm.reset();
