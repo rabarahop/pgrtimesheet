@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Timesheet Portal</title>
+    
+    <!-- PWA META TAGS -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e40af">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- LIBRERÍA PARA EXPORTAR A EXCEL (.xlsx) -->
@@ -21,12 +27,21 @@
 </head>
 <body class="bg-gray-100 h-screen flex flex-col font-sans">
 
+    <!-- PWA INSTALL PROMPT (Optional UI) -->
+    <div id="install-prompt" class="hidden bg-blue-600 text-white p-3 flex justify-between items-center text-sm shadow-md z-50 relative">
+        <div><i class="fa-solid fa-download mr-2"></i> Instala nuestra App para un acceso más rápido.</div>
+        <div class="flex gap-2">
+            <button id="btn-install" class="bg-white text-blue-600 px-3 py-1 rounded font-bold uppercase text-xs">Instalar</button>
+            <button id="btn-close-install" class="text-white opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+
     <!-- FLOATING NOTIFICATION TOAST CONTAINER -->
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full px-4 pointer-events-none"></div>
 
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="flex flex-1 items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        <div class="bg-white p-8 rounded-lg shadow-md w-96 max-w-full">
             <h2 class="text-2xl font-bold mb-6 text-center text-blue-800">Timesheet Login</h2>
             
             <div id="error-message" class="hidden bg-red-100 text-red-700 p-3 rounded mb-4 text-sm font-semibold"></div>
@@ -55,24 +70,23 @@
     <div id="app-screen" class="hidden flex-col h-screen overflow-y-auto">
         <!-- Navigation Bar -->
         <nav class="bg-blue-800 text-white p-4 flex justify-between items-center shadow-md shrink-0 sticky top-0 z-40">
-            <div class="font-bold text-xl flex items-center gap-2">
+            <div class="font-bold text-lg md:text-xl flex items-center gap-2">
                 <i class="fa-solid fa-clock-rotate-left"></i> Timesheet Portal
             </div>
-            <div class="flex items-center gap-4">
-                <div class="text-sm hidden sm:block">
+            <div class="flex items-center gap-2 md:gap-4">
+                <div class="text-xs md:text-sm hidden sm:block">
                     Hello, <span id="user-display-email" class="font-bold"></span> 
                     <span id="user-display-role" class="bg-blue-600 px-2 py-1 rounded text-xs ml-2 uppercase"></span>
                 </div>
-                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm font-bold transition-colors">Log Out</button>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs md:text-sm font-bold transition-colors"><i class="fa-solid fa-right-from-bracket sm:hidden"></i><span class="hidden sm:inline">Log Out</span></button>
             </div>
         </nav>
 
         <!-- APP TABS (Only visible for roles: owner, controller, accounting) -->
         <div id="app-tabs" class="hidden bg-white shadow-sm shrink-0 border-b">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Se agregó overflow-x-auto y no-scrollbar para móviles -->
-                <div class="flex space-x-4 sm:space-x-8 overflow-x-auto no-scrollbar">
-                    <!-- Se agregó whitespace-nowrap para que el texto no se rompa -->
+                <!-- Se agregó overflow-x-auto, no-scrollbar y padding lateral para móviles -->
+                <div class="flex space-x-6 sm:space-x-8 overflow-x-auto no-scrollbar pb-1 pr-4">
                     <button id="tab-my-timesheet" class="app-tab border-blue-600 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 whitespace-nowrap">
                         <i class="fa-solid fa-user"></i> My Timesheet
                     </button>
@@ -93,7 +107,7 @@
             <!-- VIEW 1: MY TIMESHEET (EMPLOYEE VIEW)       -->
             <!-- ========================================== -->
             <div id="view-my-timesheet" class="view-section">
-                <div class="bg-white p-6 rounded shadow-md border-t-4 border-blue-500 mb-6 relative">
+                <div class="bg-white p-4 sm:p-6 rounded shadow-md border-t-4 border-blue-500 mb-6 relative">
                     <!-- Status Banner for Draft/Submitted States -->
                     <div id="status-banner" class="hidden mb-4 p-3 rounded text-sm font-bold flex items-center gap-2"></div>
 
@@ -102,9 +116,9 @@
                             <h3 class="text-xl font-bold text-gray-800">Daily Timesheet</h3>
                             <p class="text-xs text-gray-500">Save your progress throughout the day and submit when finished.</p>
                         </div>
-                        <div>
+                        <div class="w-full sm:w-auto">
                             <label class="block text-gray-700 text-xs font-bold mb-1 uppercase">Select Date</label>
-                            <input type="date" id="ts-date" min="2026-08-20" class="p-2 border rounded focus:outline-none focus:border-blue-500 text-sm font-bold bg-blue-50 text-blue-900 cursor-pointer hover:bg-blue-100 transition" required>
+                            <input type="date" id="ts-date" min="2026-08-20" class="w-full sm:w-auto p-2 border rounded focus:outline-none focus:border-blue-500 text-sm font-bold bg-blue-50 text-blue-900 cursor-pointer hover:bg-blue-100 transition" required>
                         </div>
                     </div>
 
@@ -113,25 +127,25 @@
                         <div class="lg:col-span-2">
                             <form id="timesheet-form" class="space-y-6">
                                 <!-- SECTION 1: WORK HOURS & MULTI-LINE JOBS -->
-                                <div class="bg-gray-50 p-4 rounded border">
+                                <div class="bg-gray-50 p-2 sm:p-4 rounded border">
                                     <div class="flex justify-between items-center mb-4 border-b pb-2">
                                         <h4 class="font-bold text-blue-800">Work Hours & Jobs</h4>
-                                        <button type="button" id="add-row-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1">
+                                        <button type="button" id="add-row-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1 shrink-0">
                                             <i class="fa-solid fa-plus"></i> Add Job Row
                                         </button>
                                     </div>
 
-                                    <div class="overflow-x-auto">
+                                    <div class="overflow-x-auto no-scrollbar border rounded">
                                         <table class="w-full text-left border-collapse" id="job-rows-table">
                                             <thead>
-                                                <!-- Se reemplazaron las clases w-XX por min-w-[XXpx] para forzar anchos cómodos en móviles -->
-                                                <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
-                                                    <th class="p-2 min-w-[180px]">Job #</th>
-                                                    <th class="p-2 min-w-[100px]">Regular</th>
-                                                    <th class="p-2 min-w-[100px]">Overtime</th>
-                                                    <th class="p-2 min-w-[100px]">Double Time</th>
-                                                    <th class="p-2 min-w-[100px]">High Rate</th>
-                                                    <th class="p-2 min-w-[160px]">Out of Territory Notes</th>
+                                                <!-- EXPANDED min-widths para celulares -->
+                                                <tr class="bg-gray-200 text-gray-700 text-[10px] sm:text-xs uppercase tracking-wider">
+                                                    <th class="p-2 min-w-[250px] border-r">Job #</th>
+                                                    <th class="p-2 min-w-[100px] border-r">Regular</th>
+                                                    <th class="p-2 min-w-[100px] border-r">Overtime</th>
+                                                    <th class="p-2 min-w-[100px] border-r">Double Time</th>
+                                                    <th class="p-2 min-w-[100px] border-r">High Rate</th>
+                                                    <th class="p-2 min-w-[200px] border-r">Out of Territory Notes</th>
                                                     <th class="p-2 min-w-[60px] text-center">Action</th>
                                                 </tr>
                                             </thead>
@@ -140,29 +154,30 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                    <p class="text-[10px] text-gray-400 mt-2 text-right italic"><i class="fa-solid fa-arrows-left-right"></i> Swipe table to see more columns</p>
                                 </div>
 
                                 <!-- SECTION 2: REIMBURSEMENTS (Multi-line) -->
-                                <div class="bg-gray-50 p-4 rounded border">
+                                <div class="bg-gray-50 p-2 sm:p-4 rounded border">
                                     <div class="flex justify-between items-center mb-4 border-b pb-2">
                                         <div>
                                             <h4 class="font-bold text-blue-800">Reimbursements</h4>
-                                            <p class="text-xs text-gray-500 font-bold">Receipt upload disabled for this prototype.</p>
+                                            <p class="text-[10px] sm:text-xs text-gray-500 font-bold">Receipt upload disabled for this prototype.</p>
                                         </div>
-                                        <button type="button" id="add-reimb-btn" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1">
+                                        <button type="button" id="add-reimb-btn" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1 shrink-0">
                                             <i class="fa-solid fa-plus"></i> Add Expense
                                         </button>
                                     </div>
 
-                                    <div class="overflow-x-auto">
+                                    <div class="overflow-x-auto no-scrollbar border rounded">
                                         <table class="w-full text-left border-collapse" id="reimb-rows-table">
                                             <thead>
-                                                <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
-                                                    <!-- Se reemplazaron anchos por anchos mínimos -->
-                                                    <th class="p-2 min-w-[180px]">Job #</th>
-                                                    <th class="p-2 min-w-[150px]">Expense Type</th>
-                                                    <th class="p-2 min-w-[120px]">Amount / Qty</th>
-                                                    <th class="p-2 min-w-[160px]">Notes</th>
+                                                <!-- EXPANDED min-widths para celulares -->
+                                                <tr class="bg-gray-200 text-gray-700 text-[10px] sm:text-xs uppercase tracking-wider">
+                                                    <th class="p-2 min-w-[250px] border-r">Job #</th>
+                                                    <th class="p-2 min-w-[150px] border-r">Expense Type</th>
+                                                    <th class="p-2 min-w-[120px] border-r">Amount / Qty</th>
+                                                    <th class="p-2 min-w-[200px] border-r">Notes</th>
                                                     <th class="p-2 min-w-[60px] text-center">Action</th>
                                                 </tr>
                                             </thead>
@@ -174,6 +189,7 @@
                                             No reimbursements added. Click "Add Expense" if needed.
                                         </div>
                                     </div>
+                                    <p class="text-[10px] text-gray-400 mt-2 text-right italic"><i class="fa-solid fa-arrows-left-right"></i> Swipe table to see more columns</p>
                                 </div>
 
                                 <!-- Submit Buttons -->
@@ -181,7 +197,7 @@
                                     <div id="loading-spinner" class="hidden flex items-center gap-2 text-blue-600 font-bold w-full md:w-auto justify-center">
                                         <i class="fa-solid fa-spinner fa-spin text-2xl"></i> Processing...
                                     </div>
-                                    <div class="flex w-full md:w-auto gap-4 ml-auto">
+                                    <div class="flex flex-col sm:flex-row w-full md:w-auto gap-4 ml-auto">
                                         <button type="button" id="save-draft-btn" class="w-full md:w-auto bg-gray-500 text-white font-bold py-3 px-6 rounded hover:bg-gray-600 shadow-md transition-colors text-sm flex items-center justify-center gap-2">
                                             <i class="fa-solid fa-floppy-disk"></i> Save Draft
                                         </button>
@@ -215,13 +231,13 @@
             <!-- VIEW 2: ALL COMPANY TIMESHEETS & EXPORT    -->
             <!-- ========================================== -->
             <div id="view-all-timesheets" class="view-section hidden">
-                <div class="bg-white p-6 rounded shadow-md border-t-4 border-purple-500 mb-6 relative">
-                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <div class="bg-white p-4 sm:p-6 rounded shadow-md border-t-4 border-purple-500 mb-6 relative">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4 gap-4">
                         <div>
                             <h3 class="text-xl font-bold text-gray-800">Company Timesheets</h3>
                             <p class="text-xs text-gray-500">Filter, view, and export employee submissions.</p>
                         </div>
-                        <button type="button" id="export-excel-btn" class="bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 px-4 rounded shadow transition-colors flex items-center gap-2">
+                        <button type="button" id="export-excel-btn" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 px-4 rounded shadow transition-colors flex items-center justify-center gap-2 shrink-0">
                             <i class="fa-solid fa-file-excel"></i> Export to Excel
                         </button>
                     </div>
@@ -251,7 +267,7 @@
                     <div class="overflow-x-auto border rounded">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-gray-200 text-gray-700 text-xs uppercase">
+                                <tr class="bg-gray-200 text-gray-700 text-xs uppercase tracking-wider">
                                     <th class="p-3 border-b min-w-[120px]">Date</th>
                                     <th class="p-3 border-b min-w-[200px]">Employee</th>
                                     <th class="p-3 border-b min-w-[120px]">Status</th>
@@ -316,7 +332,7 @@
                             <div class="overflow-x-auto border rounded">
                                 <table class="w-full text-left border-collapse">
                                     <thead>
-                                        <tr class="bg-gray-100 text-gray-700 text-xs uppercase">
+                                        <tr class="bg-gray-100 text-gray-700 text-xs uppercase tracking-wider">
                                             <th class="p-3 border-b min-w-[200px]">Email</th>
                                             <th class="p-3 border-b min-w-[150px]">Role</th>
                                             <th class="p-3 border-b text-center min-w-[120px]">Status</th>
@@ -393,12 +409,51 @@
         const adminTsTableBody = document.getElementById('admin-timesheets-table-body');
         const btnApplyFilters = document.getElementById('btn-apply-filters');
         const btnExportExcel = document.getElementById('export-excel-btn');
-        let currentAdminData = []; // Store raw data for excel export
+        let currentAdminData = []; 
 
         // UI Elements - User Management
         const usersTableBody = document.getElementById('users-table-body');
         const addUserForm = document.getElementById('add-user-form');
         const btnRefreshUsers = document.getElementById('btn-refresh-users');
+
+        // --- PWA REGISTRATION ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then((registration) => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, (error) => {
+                    console.log('ServiceWorker registration failed: ', error);
+                });
+            });
+        }
+
+        // PWA Install Prompt Logic
+        let deferredPrompt;
+        const installPromptUi = document.getElementById('install-prompt');
+        const btnInstall = document.getElementById('btn-install');
+        const btnCloseInstall = document.getElementById('btn-close-install');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Solo mostrar si no se ha ocultado antes (puedes guardar en localStorage para ser menos molesto)
+            installPromptUi.classList.remove('hidden');
+        });
+
+        btnInstall.addEventListener('click', async () => {
+            installPromptUi.classList.add('hidden');
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                deferredPrompt = null;
+            }
+        });
+
+        btnCloseInstall.addEventListener('click', () => {
+            installPromptUi.classList.add('hidden');
+        });
+
 
         // Toast Notification System
         function showToast(message, type = 'success') {
@@ -574,18 +629,18 @@
         });
 
         // ==========================================
-        // MODULE 1: MY TIMESHEET LOGIC (Unchanged)
+        // MODULE 1: MY TIMESHEET LOGIC
         // ==========================================
         function addJobRow(data = {}) {
             const tr = document.createElement('tr');
             tr.className = "hover:bg-gray-100 transition-colors job-row";
             tr.innerHTML = `
-                <td class="p-2"><input type="text" placeholder="Job #" class="row-job w-full p-1.5 border rounded text-sm bg-white" value="${data.job_number || ''}" required></td>
-                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-reg w-full p-1.5 border rounded text-sm bg-white" value="${data.regular_hours !== undefined ? data.regular_hours : ''}"></td>
-                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-ot w-full p-1.5 border rounded text-sm bg-white" value="${data.overtime_hours !== undefined ? data.overtime_hours : ''}"></td>
-                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-dt w-full p-1.5 border rounded text-sm bg-white" value="${data.double_time_hours !== undefined ? data.double_time_hours : ''}"></td>
-                <td class="p-2"><input type="number" step="0.5" min="0" placeholder="0" class="row-high w-full p-1.5 border rounded text-sm bg-white" value="${data.high_rate_hours !== undefined ? data.high_rate_hours : ''}"></td>
-                <td class="p-2"><input type="text" placeholder="Territory notes" class="row-territory w-full p-1.5 border rounded text-sm bg-white" value="${data.out_of_territory || ''}"></td>
+                <td class="p-2 border-r"><input type="text" placeholder="Job #" class="row-job w-full p-1.5 border rounded text-sm bg-white" value="${data.job_number || ''}" required></td>
+                <td class="p-2 border-r"><input type="number" step="0.5" min="0" placeholder="0" class="row-reg w-full p-1.5 border rounded text-sm bg-white" value="${data.regular_hours !== undefined ? data.regular_hours : ''}"></td>
+                <td class="p-2 border-r"><input type="number" step="0.5" min="0" placeholder="0" class="row-ot w-full p-1.5 border rounded text-sm bg-white" value="${data.overtime_hours !== undefined ? data.overtime_hours : ''}"></td>
+                <td class="p-2 border-r"><input type="number" step="0.5" min="0" placeholder="0" class="row-dt w-full p-1.5 border rounded text-sm bg-white" value="${data.double_time_hours !== undefined ? data.double_time_hours : ''}"></td>
+                <td class="p-2 border-r"><input type="number" step="0.5" min="0" placeholder="0" class="row-high w-full p-1.5 border rounded text-sm bg-white" value="${data.high_rate_hours !== undefined ? data.high_rate_hours : ''}"></td>
+                <td class="p-2 border-r"><input type="text" placeholder="Territory notes" class="row-territory w-full p-1.5 border rounded text-sm bg-white" value="${data.out_of_territory || ''}"></td>
                 <td class="p-2 text-center">
                     <button type="button" class="delete-row-btn text-red-500 hover:text-red-700 p-1 rounded transition-colors" title="Remove row"><i class="fa-solid fa-trash-can"></i></button>
                 </td>
@@ -602,8 +657,8 @@
             const tr = document.createElement('tr');
             tr.className = "hover:bg-gray-100 transition-colors reimb-row";
             tr.innerHTML = `
-                <td class="p-2"><input type="text" placeholder="Job #" class="reimb-job w-full p-1.5 border rounded text-sm bg-white" value="${data.job_number || ''}" required></td>
-                <td class="p-2">
+                <td class="p-2 border-r"><input type="text" placeholder="Job #" class="reimb-job w-full p-1.5 border rounded text-sm bg-white" value="${data.job_number || ''}" required></td>
+                <td class="p-2 border-r">
                     <select class="reimb-type w-full p-1.5 border rounded text-sm bg-white" required>
                         <option value="" disabled ${!data.expense_type ? 'selected' : ''}>Select Type</option>
                         <option value="Mileage" ${data.expense_type === 'Mileage' ? 'selected' : ''}>Mileage (Qty)</option>
@@ -614,8 +669,8 @@
                         <option value="Other" ${data.expense_type === 'Other' ? 'selected' : ''}>Other ($)</option>
                     </select>
                 </td>
-                <td class="p-2"><input type="number" step="any" min="0.01" placeholder="0.00" class="reimb-amount w-full p-1.5 border rounded text-sm bg-white" value="${data.amount_qty || ''}" required></td>
-                <td class="p-2"><input type="text" placeholder="Notes (Optional)" class="reimb-notes w-full p-1.5 border rounded text-sm bg-white" value="${data.notes || ''}"></td>
+                <td class="p-2 border-r"><input type="number" step="any" min="0.01" placeholder="0.00" class="reimb-amount w-full p-1.5 border rounded text-sm bg-white" value="${data.amount_qty || ''}" required></td>
+                <td class="p-2 border-r"><input type="text" placeholder="Notes (Optional)" class="reimb-notes w-full p-1.5 border rounded text-sm bg-white" value="${data.notes || ''}"></td>
                 <td class="p-2 text-center">
                     <button type="button" class="delete-reimb-btn text-red-500 hover:text-red-700 p-1 rounded transition-colors" title="Remove expense"><i class="fa-solid fa-trash-can"></i></button>
                 </td>
