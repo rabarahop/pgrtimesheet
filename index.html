@@ -108,7 +108,7 @@
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <div>
                                 <h4 class="font-bold text-blue-800">Reimbursements</h4>
-                                <p class="text-xs text-red-500 font-bold">***Receipts are mandatory for all reimbursements***</p>
+                                <p class="text-xs text-gray-500 font-bold">Receipt upload feature is temporarily disabled for this prototype.</p>
                             </div>
                             <button type="button" id="add-reimb-btn" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors flex items-center gap-1">
                                 <i class="fa-solid fa-plus"></i> Add Expense
@@ -123,7 +123,6 @@
                                         <th class="p-2 w-36">Job #</th>
                                         <th class="p-2 w-40">Expense Type</th>
                                         <th class="p-2 w-24">Amount / Qty</th>
-                                        <th class="p-2 w-48">Receipt Image</th>
                                         <th class="p-2">Notes</th>
                                         <th class="p-2 w-12 text-center">Action</th>
                                     </tr>
@@ -164,8 +163,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
-        // Import Firebase Storage
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDnh-uSVwIiG0kU7IeELr0blqY3tHY33PE",
@@ -180,7 +177,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app); // Initialize Storage
 
         // UI Elements
         const loginScreen = document.getElementById('login-screen');
@@ -265,9 +261,6 @@
             noReimbMsg.classList.add('hidden');
             const tr = document.createElement('tr');
             tr.className = "hover:bg-gray-100 transition-colors reimb-row";
-            
-            // Unique ID for the file input to attach labels if needed
-            const fileId = 'receipt_' + Date.now() + Math.floor(Math.random() * 1000);
 
             tr.innerHTML = `
                 <td class="p-2">
@@ -286,9 +279,6 @@
                 </td>
                 <td class="p-2">
                     <input type="number" step="any" min="0.01" placeholder="0.00" class="reimb-amount w-full p-1.5 border rounded text-sm bg-white" required>
-                </td>
-                <td class="p-2">
-                    <input type="file" id="${fileId}" accept="image/*,.pdf" class="reimb-file w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
                 </td>
                 <td class="p-2">
                     <input type="text" placeholder="Notes (Optional)" class="reimb-notes w-full p-1.5 border rounded text-sm bg-white">
@@ -438,25 +428,25 @@
                         // Enforce file selection if amount > 0 (HTML required attribute should catch this, but double checking)
                         if (fileInput.files.length === 0) {
                             throw new Error(`Receipt missing for ${type} on Job ${jobNum}. Receipts are mandatory.`);
-                        }
+                // 2. Collect Reimbursements
+                const reimbRowsData = [];
+                const rRows = reimbRowsContainer.querySelectorAll('.reimb-row');
+                let totalReimbursements = 0;
 
-                        const file = fileInput.files[0];
-                        // Create a unique filename: userEmail_timestamp_originalName
-                        const uniqueFileName = `${auth.currentUser.email.split('@')[0]}_${Date.now()}_${file.name}`;
-                        const storageRef = ref(storage, `receipts/${uniqueFileName}`);
+                for (const tr of rRows) {
+                    const jobNum = tr.querySelector('.reimb-job').value.trim();
+                    const type = tr.querySelector('.reimb-type').value;
+                    const amount = Number(tr.querySelector('.reimb-amount').value) || 0;
+                    const notes = tr.querySelector('.reimb-notes').value.trim();
+                    
+                    if (amount > 0) {
+                        totalReimbursements += amount;
                         
-                        // Upload the file
-                        const snapshot = await uploadBytes(storageRef, file);
-                        // Get the public download URL
-                        const downloadURL = await getDownloadURL(snapshot.ref);
-
                         reimbRowsData.push({
                             job_number: jobNum,
                             expense_type: type,
                             amount_qty: amount,
-                            notes: notes,
-                            receipt_url: downloadURL, // Save the link to the image
-                            receipt_filename: uniqueFileName // Good practice to keep the filename
+                            notes: notes
                         });
                     }
                 }
