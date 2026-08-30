@@ -68,34 +68,38 @@
 
     <!-- MAIN APP SCREEN (Hidden by default) -->
     <div id="app-screen" class="hidden flex-col h-screen overflow-y-auto">
-        <!-- Navigation Bar -->
-        <nav class="bg-blue-800 text-white p-4 flex justify-between items-center shadow-md shrink-0 sticky top-0 z-40">
-            <div class="font-bold text-lg md:text-xl flex items-center gap-2">
-                <i class="fa-solid fa-clock-rotate-left"></i> Timesheet Portal
-            </div>
-            <div class="flex items-center gap-2 md:gap-4">
-                <div class="text-xs md:text-sm hidden sm:block">
-                    Hello, <span id="user-display-email" class="font-bold"></span> 
-                    <span id="user-display-role" class="bg-blue-600 px-2 py-1 rounded text-xs ml-2 uppercase"></span>
+        
+        <!-- STICKY HEADER WRAPPER (Envuelve la Navbar y los Tabs para que siempre estén arriba al hacer scroll) -->
+        <div class="sticky top-0 z-40 w-full shadow-md flex flex-col">
+            <!-- Navigation Bar -->
+            <nav class="bg-blue-800 text-white p-4 flex justify-between items-center shrink-0">
+                <div class="font-bold text-lg md:text-xl flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Timesheet Portal
                 </div>
-                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs md:text-sm font-bold transition-colors"><i class="fa-solid fa-right-from-bracket sm:hidden"></i><span class="hidden sm:inline">Log Out</span></button>
-            </div>
-        </nav>
+                <div class="flex items-center gap-2 md:gap-4">
+                    <div class="text-xs md:text-sm hidden sm:block">
+                        Hello, <span id="user-display-email" class="font-bold"></span> 
+                        <span id="user-display-role" class="bg-blue-600 px-2 py-1 rounded text-xs ml-2 uppercase"></span>
+                    </div>
+                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs md:text-sm font-bold transition-colors"><i class="fa-solid fa-right-from-bracket sm:hidden"></i><span class="hidden sm:inline">Log Out</span></button>
+                </div>
+            </nav>
 
-        <!-- APP TABS (Only visible for roles: owner, controller, accounting) -->
-        <div id="app-tabs" class="hidden bg-white shadow-sm shrink-0 border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Se agregó overflow-x-auto, no-scrollbar y padding lateral para móviles -->
-                <div class="flex space-x-6 sm:space-x-8 overflow-x-auto no-scrollbar pb-1 pr-4">
-                    <button id="tab-my-timesheet" class="app-tab border-blue-600 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 whitespace-nowrap">
-                        <i class="fa-solid fa-user"></i> My Timesheet
-                    </button>
-                    <button id="tab-all-timesheets" class="app-tab border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 hidden whitespace-nowrap">
-                        <i class="fa-solid fa-users"></i> Company Timesheets
-                    </button>
-                    <button id="tab-user-management" class="app-tab border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 hidden whitespace-nowrap">
-                        <i class="fa-solid fa-user-gear"></i> User Management
-                    </button>
+            <!-- APP TABS (Only visible for roles: owner, controller, accounting) -->
+            <div id="app-tabs" class="hidden bg-white shrink-0 border-b">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <!-- Se agregó overflow-x-auto, no-scrollbar y padding lateral para móviles -->
+                    <div class="flex space-x-6 sm:space-x-8 overflow-x-auto no-scrollbar pb-1 pr-4">
+                        <button id="tab-my-timesheet" class="app-tab border-blue-600 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-user"></i> My Timesheet
+                        </button>
+                        <button id="tab-all-timesheets" class="app-tab border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 hidden whitespace-nowrap">
+                            <i class="fa-solid fa-users"></i> Company Timesheets
+                        </button>
+                        <button id="tab-user-management" class="app-tab border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2 hidden whitespace-nowrap">
+                            <i class="fa-solid fa-user-gear"></i> User Management
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -988,13 +992,13 @@
                             "Overtime Hours": ot,
                             "Double Time": dt,
                             "High Rate": hr,
-                            "Mileage (in how many)": "",
-                            "Parking": "",
-                            "Tolls": "",
-                            "Hauling": "",
-                            "Phone": "",
-                            "Other Receipts": "",
-                            "Out of Territory / Notes": job.out_of_territory || ""
+                            "Mileage (Qty)": "",
+                            "Parking ($)": "",
+                            "Tolls ($)": "",
+                            "Hauling ($)": "",
+                            "Phone ($)": "",
+                            "Other Receipts ($)": "",
+                            "Notes / Territory": job.out_of_territory || ""
                         });
                     });
                 }
@@ -1017,19 +1021,19 @@
                         
                         excelRows.push({
                             ...baseInfo,
-                            "Record Type": "Expense",
+                            "Record Type": "Expense - " + r.expense_type,
                             "Job #": r.job_number,
                             "Regular Hours": "",
                             "Overtime Hours": "",
                             "Double Time": "",
                             "High Rate": "",
-                            "Mileage (in how many)": mil,
-                            "Parking": pko,
-                            "Tolls": tol,
-                            "Hauling": hau,
-                            "Phone": pho,
-                            "Other Receipts": oth,
-                            "Out of Territory / Notes": r.notes || ""
+                            "Mileage (Qty)": mil,
+                            "Parking ($)": pko,
+                            "Tolls ($)": tol,
+                            "Hauling ($)": hau,
+                            "Phone ($)": pho,
+                            "Other Receipts ($)": oth,
+                            "Notes / Territory": r.notes || ""
                         });
                     });
                 }
@@ -1046,13 +1050,13 @@
                 "Overtime Hours": sumOt,
                 "Double Time": sumDt,
                 "High Rate": sumHr,
-                "Mileage (in how many)": sumMileage,
-                "Parking": sumParking,
-                "Tolls": sumTolls,
-                "Hauling": sumHauling,
-                "Phone": sumPhone,
-                "Other Receipts": sumOther,
-                "Out of Territory / Notes": ""
+                "Mileage (Qty)": sumMileage,
+                "Parking ($)": sumParking,
+                "Tolls ($)": sumTolls,
+                "Hauling ($)": sumHauling,
+                "Phone ($)": sumPhone,
+                "Other Receipts ($)": sumOther,
+                "Notes / Territory": ""
             });
 
             const worksheet = XLSX.utils.json_to_sheet(excelRows);
