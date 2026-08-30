@@ -436,7 +436,6 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Solo mostrar si no se ha ocultado antes (puedes guardar en localStorage para ser menos molesto)
             installPromptUi.classList.remove('hidden');
         });
 
@@ -957,7 +956,9 @@
             const excelRows = [];
             
             // Variables para acumular los totales
-            let sumReg = 0, sumOt = 0, sumDt = 0, sumHr = 0, sumExp = 0;
+            let sumReg = 0, sumOt = 0, sumDt = 0, sumHr = 0;
+            // Totales de gastos desglosados
+            let sumMileage = 0, sumParking = 0, sumTolls = 0, sumHauling = 0, sumPhone = 0, sumOther = 0;
 
             currentAdminData.forEach(ts => {
                 const baseInfo = {
@@ -966,6 +967,7 @@
                     "Status": ts.status
                 };
 
+                // Add Job Entries (Work Hours)
                 if (ts.job_entries && ts.job_entries.length > 0) {
                     ts.job_entries.forEach(job => {
                         const reg = job.regular_hours || 0;
@@ -986,33 +988,54 @@
                             "Overtime Hours": ot,
                             "Double Time": dt,
                             "High Rate": hr,
-                            "Expense Amount": 0,
-                            "Notes / Territory": job.out_of_territory || ""
+                            "Mileage (in how many)": "",
+                            "Parking": "",
+                            "Tolls": "",
+                            "Hauling": "",
+                            "Phone": "",
+                            "Other Receipts": "",
+                            "Out of Territory / Notes": job.out_of_territory || ""
                         });
                     });
                 }
 
+                // Add Reimbursements
                 if (ts.reimbursements && ts.reimbursements.length > 0) {
                     ts.reimbursements.forEach(r => {
                         const amt = r.amount_qty || 0;
-                        sumExp += amt;
+                        const type = r.expense_type;
+                        
+                        let mil = "", pko = "", tol = "", hau = "", pho = "", oth = "";
+
+                        // Clasificar el gasto en la columna correcta y sumar al total respectivo
+                        if (type === "Mileage") { mil = amt; sumMileage += amt; }
+                        else if (type === "Parking") { pko = amt; sumParking += amt; }
+                        else if (type === "Tolls") { tol = amt; sumTolls += amt; }
+                        else if (type === "Hauling") { hau = amt; sumHauling += amt; }
+                        else if (type === "Phone") { pho = amt; sumPhone += amt; }
+                        else if (type === "Other") { oth = amt; sumOther += amt; }
                         
                         excelRows.push({
                             ...baseInfo,
-                            "Record Type": "Expense - " + r.expense_type,
+                            "Record Type": "Expense",
                             "Job #": r.job_number,
-                            "Regular Hours": 0,
-                            "Overtime Hours": 0,
-                            "Double Time": 0,
-                            "High Rate": 0,
-                            "Expense Amount": amt,
-                            "Notes / Territory": r.notes || ""
+                            "Regular Hours": "",
+                            "Overtime Hours": "",
+                            "Double Time": "",
+                            "High Rate": "",
+                            "Mileage (in how many)": mil,
+                            "Parking": pko,
+                            "Tolls": tol,
+                            "Hauling": hau,
+                            "Phone": pho,
+                            "Other Receipts": oth,
+                            "Out of Territory / Notes": r.notes || ""
                         });
                     });
                 }
             });
 
-            // INYECTAR FILA DE TOTALES AL FINAL
+            // INYECTAR FILA DE TOTALES AL FINAL CON COLUMNAS EXACTAS
             excelRows.push({
                 "Date": "TOTALS",
                 "Employee Email": "",
@@ -1023,8 +1046,13 @@
                 "Overtime Hours": sumOt,
                 "Double Time": sumDt,
                 "High Rate": sumHr,
-                "Expense Amount": sumExp,
-                "Notes / Territory": ""
+                "Mileage (in how many)": sumMileage,
+                "Parking": sumParking,
+                "Tolls": sumTolls,
+                "Hauling": sumHauling,
+                "Phone": sumPhone,
+                "Other Receipts": sumOther,
+                "Out of Territory / Notes": ""
             });
 
             const worksheet = XLSX.utils.json_to_sheet(excelRows);
