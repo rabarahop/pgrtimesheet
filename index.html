@@ -383,6 +383,8 @@
 
         // FECHA DE INICIO OFICIAL DEL SISTEMA
         const SYSTEM_START_DATE = "2026-08-20";
+        // LÍMITE DE USUARIOS
+        const MAX_USERS_ALLOWED = 5;
 
         const firebaseConfig = {
             apiKey: "AIzaSyDnh-uSVwIiG0kU7IeELr0blqY3tHY33PE",
@@ -405,7 +407,7 @@
         const loginScreen = document.getElementById('login-screen');
         const appScreen = document.getElementById('app-screen');
         const errorMsg = document.getElementById('error-message');
-        const paywallScreen = document.getElementById('paywall-screen'); // <-- NUEVO ELEMENTO
+        const paywallScreen = document.getElementById('paywall-screen'); 
         
         // UI Elements - Tabs & Views
         const appTabsContainer = document.getElementById('app-tabs');
@@ -575,27 +577,22 @@
                     }
 
                     // --- LÓGICA DE CANDADO (TRIAL END DATE) ---
-                    // Verificamos si existe el campo trial_end_date en la base de datos
                     if(userData.trial_end_date) {
                         const today = new Date();
-                        // Convertimos la fecha de trial (YYYY-MM-DD) a un objeto Date
                         const [year, month, day] = userData.trial_end_date.split('-');
                         const trialDate = new Date(year, month - 1, day);
                         
-                        // Si la fecha de hoy es estrictamente mayor a la fecha de prueba: BLOQUEO
                         if(today > trialDate) {
                             appTabsContainer.classList.add('hidden');
                             paywallScreen.classList.remove('hidden');
-                            // Ocultamos las demás vistas para asegurar el bloqueo
                             viewMyTs.classList.add('hidden');
                             viewAllTs.classList.add('hidden');
                             viewUsers.classList.add('hidden');
-                            return; // Terminamos aquí, no seguimos cargando el resto de la interfaz
+                            return; 
                         }
                     }
                 }
                 
-                // Si llegamos aquí, el usuario no está vencido. Aseguramos que el candado esté oculto.
                 paywallScreen.classList.add('hidden');
 
                 // 2. Translate Role for UI
@@ -647,7 +644,6 @@
                 appScreen.classList.remove('flex');
                 currentUserRole = "empleado";
                 clearTimeout(inactivityTimer);
-                // Ocultar candado si cerramos sesión
                 paywallScreen.classList.add('hidden');
             }
         });
@@ -959,6 +955,8 @@
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
+                    if (!data || !data.date || !data.employee_email) return;
+
                     let passesFilter = true;
                     
                     if (data.status !== 'submitted') passesFilter = false; 
@@ -976,7 +974,7 @@
                                 <td class="p-3 border-b font-medium">${data.date}</td>
                                 <td class="p-3 border-b">${data.employee_email}</td>
                                 <td class="p-3 border-b"><span class="px-2 py-1 ${bgStatus} rounded text-[10px] font-bold uppercase">Submitted</span></td>
-                                <td class="p-3 border-b text-center font-bold">${data.total_hours}</td>
+                                <td class="p-3 border-b text-center font-bold">${data.total_hours || 0}</td>
                                 <td class="p-3 border-b text-center">$${(data.total_reimbursements || 0).toFixed(2)}</td>
                             </tr>
                         `;
@@ -984,7 +982,7 @@
                 });
 
                 if(currentAdminData.length === 0) {
-                    adminTsTableBody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-gray-500">No submitted timesheets found matching your filters.</td></tr>';
+                    adminTsTableBody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-gray-500 font-medium">The collaborator has no time entered in the selected date range.</td></tr>';
                 } else {
                     currentAdminData.sort((a,b) => (a.date > b.date) ? -1 : 1);
                     adminTsTableBody.innerHTML = html;
@@ -992,7 +990,7 @@
 
             } catch (error) {
                 console.error("Error fetching timesheets: ", error);
-                adminTsTableBody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-red-500">Error loading data. Check console.</td></tr>';
+                adminTsTableBody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-red-500 font-bold">The collaborator has no time entered in the selected date range.</td></tr>';
             }
         }
 
@@ -1006,7 +1004,9 @@
             const excelRows = [];
             
             // Variables para acumular los totales
-            let sumReg = 0, sumOt = 0, sumDt = 0, sumHr = 0, sumExp = 0;
+            let sumReg = 0, sumOt = 0, sumDt = 0, sumHr = 0;
+            // Totales de gastos desglosados
+            let sumMileage = 0, sumParking = 0, sumTolls = 0, sumHauling = 0, sumPhone = 0, sumOther = 0;
 
             currentAdminData.forEach(ts => {
                 const baseInfo = {
@@ -1035,7 +1035,12 @@
                             "Overtime Hours": ot,
                             "Double Time": dt,
                             "High Rate": hr,
-                            "Expense Amount": 0,
+                            "Mileage (Qty)": "",
+                            "Parking ($)": "",
+                            "Tolls ($)": "",
+                            "Hauling ($)": "",
+                            "Phone ($)": "",
+                            "Other Receipts ($)": "",
                             "Notes / Territory": job.out_of_territory || ""
                         });
                     });
@@ -1044,24 +1049,39 @@
                 if (ts.reimbursements && ts.reimbursements.length > 0) {
                     ts.reimbursements.forEach(r => {
                         const amt = r.amount_qty || 0;
-                        sumExp += amt;
+                        const type = r.expense_type;
+                        
+                        let mil = "", pko = "", tol = "", hau = "", pho = "", oth = "";
+
+                        // Clasificar el gasto en la columna correcta y sumar al total respectivo
+                        if (type === "Mileage") { mil = amt; sumMileage += amt; }
+                        else if (type === "Parking") { pko = amt; sumParking += amt; }
+                        else if (type === "Tolls") { tol = amt; sumTolls += amt; }
+                        else if (type === "Hauling") { hau = amt; sumHauling += amt; }
+                        else if (type === "Phone") { pho = amt; sumPhone += amt; }
+                        else if (type === "Other") { oth = amt; sumOther += amt; }
                         
                         excelRows.push({
                             ...baseInfo,
                             "Record Type": "Expense - " + r.expense_type,
                             "Job #": r.job_number,
-                            "Regular Hours": 0,
-                            "Overtime Hours": 0,
-                            "Double Time": 0,
-                            "High Rate": 0,
-                            "Expense Amount": amt,
+                            "Regular Hours": "",
+                            "Overtime Hours": "",
+                            "Double Time": "",
+                            "High Rate": "",
+                            "Mileage (Qty)": mil,
+                            "Parking ($)": pko,
+                            "Tolls ($)": tol,
+                            "Hauling ($)": hau,
+                            "Phone ($)": pho,
+                            "Other Receipts ($)": oth,
                             "Notes / Territory": r.notes || ""
                         });
                     });
                 }
             });
 
-            // INYECTAR FILA DE TOTALES AL FINAL
+            // INYECTAR FILA DE TOTALES AL FINAL CON COLUMNAS EXACTAS
             excelRows.push({
                 "Date": "TOTALS",
                 "Employee Email": "",
@@ -1072,7 +1092,12 @@
                 "Overtime Hours": sumOt,
                 "Double Time": sumDt,
                 "High Rate": sumHr,
-                "Expense Amount": sumExp,
+                "Mileage (Qty)": sumMileage,
+                "Parking ($)": sumParking,
+                "Tolls ($)": sumTolls,
+                "Hauling ($)": sumHauling,
+                "Phone ($)": sumPhone,
+                "Other Receipts ($)": sumOther,
                 "Notes / Territory": ""
             });
 
@@ -1157,6 +1182,19 @@
             const newRole = document.getElementById('new-user-role').value;
             
             try {
+                // --- NUEVO: LÓGICA DE LÍMITE DE USUARIOS ---
+                // 1. Contar cuántos usuarios existen actualmente
+                const usersRef = collection(db, "usuarios");
+                const querySnapshot = await getDocs(query(usersRef));
+                const currentUsersCount = querySnapshot.size;
+                
+                // 2. Verificar si hemos llegado al límite
+                if (currentUsersCount >= MAX_USERS_ALLOWED) {
+                    showToast(`User limit reached (${MAX_USERS_ALLOWED}). Please contact administration to upgrade your plan.`, "error");
+                    return; // Detiene la ejecución, no crea el usuario
+                }
+                
+                // 3. Si no ha llegado al límite, procede a crearlo
                 await setDoc(doc(db, "usuarios", newEmail), {
                     email: newEmail,
                     rol: newRole,
